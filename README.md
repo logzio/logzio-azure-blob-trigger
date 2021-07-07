@@ -1,0 +1,1 @@
+# logzio-azure-blob-trigger
