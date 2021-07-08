@@ -34,20 +34,36 @@ class FileHandler:
             try:
                 self.logzio_shipper.add_log_to_send(log)
             except Exception:
-                break
+                logging.error("Failed to send logs to Logz.io")
+                return
 
         try:    
             self.logzio_shipper.send_to_logzio()
         except Exception:
+            logging.error("Failed to send logs to Logz.io")
             return
 
-        logging.info("Finished processing file - {}".format(self.file_name))
+        logging.info("Successfully finished processing file - {}".format(self.file_name))
 
     def __get_file_parser(self) -> FileParser:
         if self.file_data.startswith(FileHandler.JSON_STARTING_CHAR):
             return JsonParser(self.file_data)
 
-        if FileHandler.CSV_SEPARATOR in self.file_data:
+        if self.__is_file_csv():
             return CsvParser(self.file_data)
 
         return TextParser(self.file_data)
+
+    def __is_file_csv(self) -> bool:
+        first_line = self.file_data.split('\n')[0]
+        vars = first_line.split(FileHandler.CSV_SEPARATOR)
+        separator_count = first_line.count(FileHandler.CSV_SEPARATOR)
+
+        if len(vars) == separator_count + 1:
+            return True
+
+        return False
+
+
+
+

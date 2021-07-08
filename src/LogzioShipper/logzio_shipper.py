@@ -2,7 +2,6 @@ import logging
 import requests
 
 from typing import Any
-from requests import sessions
 from requests.adapters import HTTPAdapter, RetryError
 from urllib3.util import Retry
 from requests.sessions import InvalidSchema, Session
@@ -15,7 +14,9 @@ class LogzioShipper:
     MAX_BULK_SIZE_BYTES = MAX_BODY_SIZE_BYTES / 20            # 0.5 MB
     MAX_LOG_SIZE_BYTES = 500 * 1000                           # 500 KB
 
-    MAX_RETRIES = 3
+    MAX_RETRIES = 5
+    BACKOFF_FACTOR = 1
+    STATUS_FORCELIST = [500, 502, 503, 504]
     CONNECTION_TIMEOUT_SECONDS = 5
 
     def __init__(self, logzio_url: str, token: str) -> None:
@@ -50,10 +51,12 @@ class LogzioShipper:
             response.raise_for_status()
             logging.info("Successfully sent bulk of {} bytes to Logz.io.".format(self.bulk_size))
         except requests.ConnectionError as e:
-            logging.error("Can't establish connection to {0} url. Please make sure your url is a Logz.io valid url. response: {1}".format(self.logzio_url, e))
+            logging.error(
+                "Can't establish connection to {0} url. Please make sure your url is a Logz.io valid url. Max retries of {1} has reached. response: {2}"
+                .format(self.logzio_url, LogzioShipper.MaxRetries, e))
             raise
         except RetryError as e:
-            logging.error("Something went wrong. response: {}".format(e))
+            logging.error("Something went wrong. Max retries of {0} has reached. response: {1}".format(LogzioShipper.MaxRetries, e))
             raise
         except InvalidSchema as e:
             logging.error("No connection adapters were found for {}. Make sure your url starts with http:// or https://".format(self.logzio_url))
@@ -62,7 +65,7 @@ class LogzioShipper:
             status_code = response.status_code
 
             if status_code == 400:
-                logging.error("The logs are too big or bad formatted. response: {}".format(e))
+                logging.error("The logs are bad formatted. response: {}".format(e))
                 raise
 
             if status_code == 401:
@@ -78,7 +81,7 @@ class LogzioShipper:
     def __is_log_valid_to_be_sent(self, log_size: int) -> bool:
         if log_size > LogzioShipper.MAX_LOG_SIZE_BYTES:
             logging.error(
-                "One of the log's size is greater than the max log size - {} bytes, that can be send to Logz.io".format(LogzioShipper.MAX_LOG_SIZE_BYTES))
+                "One of the log's size is greater than the max log size - {} bytes, that can be sent to Logz.io".format(LogzioShipper.MAX_LOG_SIZE_BYTES))
 
             return False
 
@@ -86,9 +89,9 @@ class LogzioShipper:
 
     def __get_request_retry_session(
         self,
-        retries=5,
-        backoff_factor=1,
-        status_forcelist=[500, 502, 503, 504]
+        retries=MAX_RETRIES,
+        backoff_factor=BACKOFF_FACTOR,
+        status_forcelist=STATUS_FORCELIST
     ) -> Session:
         session = requests.Session()
         retry = Retry(
@@ -101,6 +104,7 @@ class LogzioShipper:
             status_forcelist=status_forcelist,
         )
         adapter = HTTPAdapter(max_retries=retry)
+
         session.mount('http://', adapter)
         session.mount('https://', adapter)
         session.headers.update({"Content-Type": "application/json"})

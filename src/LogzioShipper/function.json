@@ -6,7 +6,7 @@
       "type": "blobTrigger",
       "direction": "in",
       "path": "test-container/{name}",
-      "connection": "shiranavidov_STORAGE"
+      "connection": "StorageConnectionString"
     }
   ]
 }

@@ -12,7 +12,7 @@ class JsonParser(FileParser):
         super().__init__(file_data)
 
     def parse_file(self) -> Generator:
-        jsons = str.split(self.file_data, '\n')
+        jsons = self.file_data.split('\n')
 
         for json_data in jsons:
             try:
