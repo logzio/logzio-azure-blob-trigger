@@ -3,7 +3,7 @@ from .file_parser import FileParser
 
 class TextParser(FileParser):
 
-    def __init__(self, file_data: bytes) -> None:
+    def __init__(self, file_data: str) -> None:
         super().__init__(file_data)
 
     def parse_file(self) -> Generator:

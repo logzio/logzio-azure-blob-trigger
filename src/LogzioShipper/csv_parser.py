@@ -9,12 +9,13 @@ from .file_parser import FileParser
 
 class CsvParser(FileParser):
     
-    def __init__(self, file_data: bytes) -> None:
+    def __init__(self, file_data: str, delimiter: str) -> None:
         super().__init__(file_data)
+        self.delimiter = delimiter
 
     def parse_file(self) -> Generator:
         try:
-            reader = csv.DictReader(io.StringIO(self.file_data))
+            reader = csv.DictReader(io.StringIO(self.file_data), delimiter=self.delimiter)
             
             for row in reader:
                 yield json.dumps(row)

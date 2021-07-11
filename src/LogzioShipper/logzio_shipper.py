@@ -14,7 +14,7 @@ class LogzioShipper:
     MAX_BULK_SIZE_BYTES = MAX_BODY_SIZE_BYTES / 20            # 0.5 MB
     MAX_LOG_SIZE_BYTES = 500 * 1000                           # 500 KB
 
-    MAX_RETRIES = 5
+    MAX_RETRIES = 3
     BACKOFF_FACTOR = 1
     STATUS_FORCELIST = [500, 502, 503, 504]
     CONNECTION_TIMEOUT_SECONDS = 5

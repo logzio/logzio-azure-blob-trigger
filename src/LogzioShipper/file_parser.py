@@ -4,7 +4,7 @@ from typing import Generator
 
 class FileParser:
 
-    def __init__(self, file_data: bytes) -> None:
+    def __init__(self, file_data: str) -> None:
         self.file_data = file_data
 
     @abstractmethod

@@ -1,5 +1,6 @@
 import logging
 import os
+import csv
 import azure.functions as func
 
 from .file_parser import FileParser
@@ -12,7 +13,7 @@ from .logzio_shipper import LogzioShipper
 class FileHandler:
 
     JSON_STARTING_CHAR = '{'
-    CSV_SEPARATOR = ','
+    CSV_DELIMITERS = [',',';','|']
 
     '''
     os.environ['URL'], os.environ['TOKEN']
@@ -49,21 +50,20 @@ class FileHandler:
         if self.file_data.startswith(FileHandler.JSON_STARTING_CHAR):
             return JsonParser(self.file_data)
 
-        if self.__is_file_csv():
-            return CsvParser(self.file_data)
+        delimiter = self.__is_file_csv()
+
+        if not delimiter is None:
+            return CsvParser(self.file_data, delimiter)
 
         return TextParser(self.file_data)
 
-    def __is_file_csv(self) -> bool:
-        first_line = self.file_data.split('\n')[0]
-        vars = first_line.split(FileHandler.CSV_SEPARATOR)
-        separator_count = first_line.count(FileHandler.CSV_SEPARATOR)
+    def __is_file_csv(self) -> str:
+        lines = self.file_data.split('\n', 2)
+        sample = '\n'.join(lines[:2])
 
-        if len(vars) == separator_count + 1:
-            return True
+        try:
+            dialect = csv.Sniffer().sniff(sample, FileHandler.CSV_DELIMITERS)
 
-        return False
-
-
-
-
+            return dialect.delimiter
+        except csv.Error:
+            return None
