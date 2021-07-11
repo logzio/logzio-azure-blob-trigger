@@ -1,0 +1,162 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "StorageAccountName": {
+            "defaultValue": "logziologs",
+            "minLength": 3,
+            "maxLength": 24,
+            "type": "String",
+            "metadata": {
+                "description": "The storage account name. Must be between 3 and 24 characters in length and contains numbers and lower-case letters only."
+            }
+        },
+        "ContainerName": {
+            "defaultValue": "logs",
+            "minLength": 3,
+            "maxLength": 24,
+            "type": "String",
+            "metadata": {
+                "description": "The name of the blob container within the storage account. Must be between 3 and 63 characters in length and contains numbers, lower-case letters and dash (-) only. Every dash (-) character must be immediately preceded and followed by a letter or number."
+            }
+        },
+		"FunctionAppName": {
+			"defaultValue": "logzio-app",
+			"minLength": 1,
+			"type": "String",
+			"metadata": {
+				"description": "The function app name."
+			}
+		}
+    },
+    "variables": {
+		"AppServicePlanName": "[concat('ASP-', parameters('FunctionAppName'))]",
+		"AppInsightsName": "[parameters('FunctionAppName')]",
+		"RepoURL": "",
+		"Branch": ""
+	},
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2021-02-01",
+            "name": "[parameters('StorageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "encryption": {
+                    "services": {
+                        "blob": {
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            },
+            "resources": [
+                {
+                    "type": "blobServices/containers",
+                    "apiVersion": "2021-02-01",
+                    "name": "[concat('default/', parameters('ContainerName'))]",
+					"properties": {},
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Storage/storageAccounts/', parameters('StorageAccountName'))]"
+                    ]
+                }
+            ]
+        },
+		{
+            "type": "Microsoft.Web/serverfarms",
+			"apiVersion": "2020-12-01",
+            "name": "[variables('AppServicePlanName')]",
+            "location": "[resourceGroup().location]",
+			"sku": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y",
+                "capacity": 0
+            },
+			"kind": "AppServicePlan",
+			"properties": {}
+        },
+		{
+          "name": "[variables('AppInsightsName')]",
+          "type": "Microsoft.Insights/components",
+          "apiVersion": "2020-02-02-preview",
+          "location": "[resourceGroup().location]",
+          "kind": "web",
+          "properties": {
+        	"Application_Type": "web"
+          }
+        },
+		{
+			"type": "Microsoft.Web/Sites",
+            "apiVersion": "2020-12-01",
+            "name": "[parameters('FunctionAppName')]",
+            "location": "[resourceGroup().location]",
+			"kind": "FunctionApp",
+			"properties": {
+				"enabled": true,
+				"siteConfig": {
+					"pythonVersion": "3.9",
+					"appSettings": [
+						{
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('Microsoft.Insights/components/', variables('AppInsightsName')), '2020-02-02-preview').InstrumentationKey]"
+                        },
+						{
+							"name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+							"value": "[concat('InstrumentationKey=', reference(resourceId('Microsoft.Insights/components/', variables('AppInsightsName')), '2020-02-02-preview').InstrumentationKey, ';IngestionEndpoint=https://centralus-0.in.applicationinsights.azure.com/')]"
+						},
+						{
+							"name": "FUNCTIONS_EXTENSION_VERSION",
+							"value": "~3"
+						},
+						{
+							"name": "FUNCTIONS_WORKER_RUNTIME",
+							"value": "python"
+						},
+						{
+							"name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('StorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('StorageAccountName')),'2021-02-01').keys[0].value)]"
+						},
+						{
+                            "name": "StorageConnectionString",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('StorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('StorageAccountName')),'2021-02-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+                        },
+						{
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('StorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('StorageAccountName')),'2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTSHARE",
+                            "value": "[toLower(parameters('FunctionAppName'))]"
+                        }
+					]
+				}
+			},
+			"resources": [{
+                "apiVersion": "2020-12-01",
+                "name": "web",
+                "type": "sourcecontrols",
+                "properties": {
+                    "RepoUrl": "[variables('RepoURL')]",
+                    "Branch": "[variables('Branch')]",
+                    "IsManualIntegration": true
+                },
+				"dependsOn": [
+                    "[resourceId('Microsoft.Web/Sites/', parameters('FunctionAppName'))]"
+                ]
+            }],
+			"dependsOn" : [
+				"[resourceId('Microsoft.Web/serverfarms/', variables('AppServicePlanName'))]",
+				"[resourceId('Microsoft.Insights/components/', variables('AppInsightsName'))]"
+			]
+		}
+    ]
+}
