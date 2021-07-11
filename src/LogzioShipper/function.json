@@ -5,7 +5,7 @@
       "name": "blobfile",
       "type": "blobTrigger",
       "direction": "in",
-      "path": "test-container/{name}",
+      "path": "LogsPath",
       "connection": "StorageConnectionString"
     }
   ]
