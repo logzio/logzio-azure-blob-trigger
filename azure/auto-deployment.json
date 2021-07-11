@@ -19,21 +19,14 @@
             "metadata": {
                 "description": "The name of the blob container within the storage account. Must be between 3 and 63 characters in length and contains numbers, lower-case letters and dash (-) only. Every dash (-) character must be immediately preceded and followed by a letter or number."
             }
-        },
-		"FunctionAppName": {
-			"defaultValue": "logzio-app",
-			"minLength": 1,
-			"type": "String",
-			"metadata": {
-				"description": "The function app name."
-			}
-		}
+        }
     },
     "variables": {
-		"AppServicePlanName": "[concat('ASP-', parameters('FunctionAppName'))]",
-		"AppInsightsName": "[parameters('FunctionAppName')]",
-		"RepoURL": "",
-		"Branch": ""
+        "FunctionAppName": "logzio-app",
+		"AppServicePlanName": "[concat('ASP-', variables('FunctionAppName'))]",
+		"AppInsightsName": "[variables('FunctionAppName')]",
+		"RepoURL": "https://github.com/logzio/logzio-azure-blob-trigger.git",
+		"Branch": "first"
 	},
     "resources": [
         {
@@ -45,7 +38,7 @@
                 "name": "Standard_LRS",
                 "tier": "Standard"
             },
-            "kind": "StorageV2",
+            "kind": "BlobStorage",
             "properties": {
                 "encryption": {
                     "services": {
@@ -97,7 +90,7 @@
 		{
 			"type": "Microsoft.Web/Sites",
             "apiVersion": "2020-12-01",
-            "name": "[parameters('FunctionAppName')]",
+            "name": "[variables('FunctionAppName')]",
             "location": "[resourceGroup().location]",
 			"kind": "FunctionApp",
 			"properties": {
@@ -135,7 +128,7 @@
                         },
                         {
                             "name": "WEBSITE_CONTENTSHARE",
-                            "value": "[toLower(parameters('FunctionAppName'))]"
+                            "value": "[toLower(variables('FunctionAppName'))]"
                         }
 					]
 				}
@@ -145,12 +138,12 @@
                 "name": "web",
                 "type": "sourcecontrols",
                 "properties": {
-                    "RepoUrl": "[variables('RepoURL')]",
-                    "Branch": "[variables('Branch')]",
-                    "IsManualIntegration": true
+                    "repoUrl": "[variables('RepoURL')]",
+                    "branch": "[variables('Branch')]",
+                    "isManualIntegration": true
                 },
 				"dependsOn": [
-                    "[resourceId('Microsoft.Web/Sites/', parameters('FunctionAppName'))]"
+                    "[resourceId('Microsoft.Web/Sites/', variables('FunctionAppName'))]"
                 ]
             }],
 			"dependsOn" : [
