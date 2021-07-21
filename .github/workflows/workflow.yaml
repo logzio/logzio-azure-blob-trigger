@@ -18,7 +18,7 @@ jobs:
         with:
           azcliversion: 2.0.72
           inlineScript: |
-            npm install -g azure-cli
+            sudo apt-get install azure-cli
             cd src
             func pack
             cp src.zip logzio_function.zip
