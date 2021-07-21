@@ -1,4 +1,4 @@
-name: Automatic tests, code-coverage and auto-deployment files upload to S3
+name: Automatic tests, code-coverage and logzio function zip upload to azure storage
 on:
   workflow_dispatch:
   push:
