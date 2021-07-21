@@ -13,7 +13,7 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - uses: actions/setup-code@v2
+      - uses: actions/setup-node@v2
         with:
           node-version: '14'
       - name: Zip
