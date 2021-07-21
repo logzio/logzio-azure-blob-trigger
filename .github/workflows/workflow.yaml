@@ -18,6 +18,7 @@ jobs:
           node-version: '14'
       - name: Zip
         run: |
+          npm install azure-cli
           npm install azure-functions-core-tools
           cd src
           func pack
