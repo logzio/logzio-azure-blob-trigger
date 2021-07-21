@@ -13,18 +13,13 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Run Azure PowerShell script
-        uses: azure/powershell@v1
-        with:
-          azPSVersion: '3.1.0'
-          inlineScript: |
-            cd src
-            func pack
-            cp src.zip logzio_function.zip
       - name: Azure CLI script
         uses: azure/CLI@v1
         with:
           azcliversion: 2.0.72
           inlineScript: |
+            npm install -g azure-cli
             cd src
+            func pack
+            cp src.zip logzio_function.zip
             az storage blob upload -f logzio_function.zip -c logzio -n logzio_function.zip
