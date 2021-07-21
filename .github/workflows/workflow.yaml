@@ -18,8 +18,5 @@ jobs:
         with:
           azcliversion: 2.0.72
           inlineScript: |
-            sudo apt-get install azure-cli
-            cd src
-            func pack
-            cp src.zip logzio_function.zip
+            cd azure
             az storage blob upload -f logzio_function.zip -c logzio -n logzio_function.zip
