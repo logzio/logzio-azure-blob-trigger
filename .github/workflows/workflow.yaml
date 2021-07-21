@@ -19,10 +19,12 @@ jobs:
       - name: Zip
         run: |
           npm install azure-cli
+          cd src
+          func pack
+          cp src.zip ../logzio_function.zip
       - name: Azure CLI script
         uses: azure/CLI@v1
         with:
           azcliversion: 2.0.72
           inlineScript: |
-            cd azure
             az storage blob upload --account-name shiranstorage --account-key RRcBXAslm7HcP0iyq9MBfVJ/9KceF8U/ZOV/S0np+YaZi7ysa9w+1FgMTMs3u+18xfUY3YcFwFf/bID6xacT7Q== -f logzio_function.zip -c logzio -n logzio_function.zip
