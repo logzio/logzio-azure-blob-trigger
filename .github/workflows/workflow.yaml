@@ -18,8 +18,7 @@ jobs:
           node-version: '14'
       - name: Zip
         run: |
-          npm install azure-cli
-          npm install azure-functions-core-tools
+          npm i -g azure-functions-core-tools@3 --unsafe-perm true
           cd src
           func pack
           cp src.zip ../logzio_function.zip
