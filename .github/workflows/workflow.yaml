@@ -16,13 +16,13 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
-      - name: Zip
+      - name: Create logzio_function zip file that contains the function package
         run: |
           npm i -g azure-functions-core-tools@3 --unsafe-perm true
           cd src
           func pack
           cp src.zip ../logzio_function.zip
-      - name: Azure CLI script
+      - name: Upload logzio_function zip file to azure storage
         uses: azure/CLI@v1
         with:
           azcliversion: 2.0.72
