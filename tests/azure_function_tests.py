@@ -16,18 +16,18 @@ from src.LogzioShipper.text_parser import TextParser
 from src.LogzioShipper.logzio_shipper import LogzioShipper
 
 
-fileConfig('logging_config.ini')
+fileConfig('tests/logging_config.ini')
 logger = logging.getLogger(__name__)
 
 
 class TestAzureFunction(unittest.TestCase):
 
-    CONFIGURATION_FILE = 'config.yaml'
-    JSON_LOG_FILE = 'logs/json'
-    JSON_WITH_BAD_LINES_LOG_FILE = 'logs/json_bad_lines'
-    CSV_COMMA_DELIMITER_LOG_FILE = 'logs/csv_comma_delimiter'
-    CSV_SEMICOLON_DELIMITER_FILE = 'logs/csv_semicolon_delimiter'
-    TEXT_LOG_FILE = 'logs/text'
+    CONFIGURATION_FILE = 'tests/config.yaml'
+    JSON_LOG_FILE = 'tests/logs/json'
+    JSON_WITH_BAD_LINES_LOG_FILE = 'tests/logs/json_bad_lines'
+    CSV_COMMA_DELIMITER_LOG_FILE = 'tests/logs/csv_comma_delimiter'
+    CSV_SEMICOLON_DELIMITER_FILE = 'tests/logs/csv_semicolon_delimiter'
+    TEXT_LOG_FILE = 'tests/logs/text'
 
     CSV_COMMA_DELIMITER = ','
     CSV_SEMICOLON_DELIMITER = ';'
