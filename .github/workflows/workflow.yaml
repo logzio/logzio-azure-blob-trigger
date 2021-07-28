@@ -1,4 +1,4 @@
-name: Automatic tests, code-coverage and logzio function zip upload to azure storage
+name: Automatic tests, code-coverage and Logz.io function zip upload to azure storage
 on:
   workflow_dispatch:
   push:
