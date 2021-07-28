@@ -7,6 +7,10 @@ from typing import Generator
 from .file_parser import FileParser
 
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+
 class CsvParser(FileParser):
     
     def __init__(self, file_data: str, delimiter: str) -> None:
@@ -20,4 +24,4 @@ class CsvParser(FileParser):
             for row in reader:
                 yield json.dumps(row)
         except TypeError:
-            logging.error("One of the csv lines was unable to be serialized to json.")
+            logger.error("One of the csv_comma_delimiter lines was unable to be serialized to json.")

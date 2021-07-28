@@ -1,6 +1,7 @@
 from typing import Generator
 from .file_parser import FileParser
 
+
 class TextParser(FileParser):
 
     def __init__(self, file_data: str) -> None:

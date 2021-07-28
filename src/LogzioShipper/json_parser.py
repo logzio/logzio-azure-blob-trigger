@@ -5,6 +5,10 @@ from typing import Generator
 from .file_parser import FileParser
 
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+
 class JsonParser(FileParser):
 
     def __init__(self, file_data: str) -> None:
@@ -18,4 +22,4 @@ class JsonParser(FileParser):
                 json.loads(json_data)
                 yield json_data
             except ValueError:
-                logging.error("One of the jsons is not a valid.")
+                logger.error("One of the jsons is not valid.")
