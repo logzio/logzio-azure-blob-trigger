@@ -1,4 +1,4 @@
-name: Automatic tests, code-coverage and Logz.io function zip upload to azure storage
+name: Automatic tests, code-coverage and Azure function zip upload to Azure storage
 on:
   workflow_dispatch:
   push:
@@ -43,13 +43,13 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
-      - name: Create logzio_function zip file that contains the function package
+      - name: Create 'logzio_function' zip file that contains the function package
         run: |
           npm i -g azure-functions-core-tools@3 --unsafe-perm true
           cd src
           func pack
           cp src.zip ../logzio_function.zip
-      - name: Upload logzio_function zip file to azure storage
+      - name: Upload logzio_function zip file to Azure storage
         uses: azure/CLI@v1
         with:
           azcliversion: 2.0.72
