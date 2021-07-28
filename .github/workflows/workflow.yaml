@@ -21,6 +21,7 @@ jobs:
           pip install pytest
           pip install httpretty
           pip install requests
+          pip install azure-functions
           pip install pyyaml
           pip install pytest-cov
           pytest --cov=src tests/azure_function_tests.py | tee code_coverage.txt
