@@ -53,8 +53,8 @@
         }
     },
     "variables": {
-        "FunctionAppName": "[concat('logzio-app', uniqueString(resourceGroup().id))]",
-		"AppServicePlanName": "[concat('ASP-', variables('FunctionAppName'), uniqueString(resourceGroup().id))]",
+        "FunctionAppName": "[concat('logzio-app-', uniqueString(resourceGroup().id))]",
+		"AppServicePlanName": "[concat('ASP-', variables('FunctionAppName'), '-', uniqueString(resourceGroup().id))]",
 		"AppInsightsName": "[variables('FunctionAppName')]"
 	},
     "resources": [
