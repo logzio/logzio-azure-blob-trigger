@@ -1,5 +1,6 @@
 import logging
 import requests
+import gzip
 
 from typing import Any
 from requests.adapters import HTTPAdapter, RetryError
@@ -10,11 +11,13 @@ from urllib3.util.retry import Retry
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+VERSION = "1.0.0"
+
 
 class LogzioShipper:
-    MAX_BODY_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
-    MAX_BULK_SIZE_BYTES = MAX_BODY_SIZE_BYTES / 20  # 0.5 MB
-    MAX_LOG_SIZE_BYTES = 500 * 1000  # 500 KB
+    MAX_BODY_SIZE_BYTES = 10 * 1024 * 1024              # 10 MB
+    MAX_BULK_SIZE_BYTES = MAX_BODY_SIZE_BYTES / 10      # 1 MB
+    MAX_LOG_SIZE_BYTES = 500 * 1000                     # 500 KB
 
     MAX_RETRIES = 3
     BACKOFF_FACTOR = 1
@@ -49,8 +52,13 @@ class LogzioShipper:
             return
 
         try:
+            headers = {"Content-Type": "application/json",
+                       "Content-Encoding": "gzip",
+                       "Logzio-Shipper": "logzio-azure-blob-trigger/v{0}/0/0.".format(VERSION)}
+            compressed_data = gzip.compress(str.encode('\n'.join(self.logs)))
             response = self.__get_request_retry_session().post(url=self.logzio_url,
-                                                               data=str.encode('\n'.join(self.logs)),
+                                                               data=compressed_data,
+                                                               headers=headers,
                                                                timeout=LogzioShipper.CONNECTION_TIMEOUT_SECONDS)
             response.raise_for_status()
             logger.info("Successfully sent bulk of {} bytes to Logz.io.".format(self.bulk_size))

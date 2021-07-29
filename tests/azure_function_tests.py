@@ -5,6 +5,7 @@ import yaml
 import os
 import httpretty
 import math
+import gzip
 
 from logging.config import fileConfig
 from requests.sessions import InvalidSchema
@@ -279,7 +280,7 @@ class TestAzureFunction(unittest.TestCase):
         for request in latest_requests:
             results['requests_num'] += 1
 
-            for line in request.parsed_body.splitlines():
+            for line in gzip.decompress(request.parsed_body).splitlines():
                 results['sent_lines_num'] += 1
                 results['sent_bytes'] += len(line)
 
