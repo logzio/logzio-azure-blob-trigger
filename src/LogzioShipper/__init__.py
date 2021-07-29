@@ -1,4 +1,5 @@
 import azure.functions as func
+import requests
 
 from .file_handler import FileHandler
 
