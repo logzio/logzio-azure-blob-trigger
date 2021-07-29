@@ -44,7 +44,6 @@
       }
     },
     "LogzioToken": {
-      "defaultValue": "",
       "type": "string",
       "minLength": 1,
       "metadata": {
