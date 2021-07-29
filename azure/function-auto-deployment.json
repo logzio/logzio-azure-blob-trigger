@@ -59,42 +59,6 @@
   },
   "resources": [
     {
-      "type": "Microsoft.Storage/storageAccounts",
-      "apiVersion": "2021-02-01",
-      "name": "[parameters('StorageAccountName')]",
-      "location": "[resourceGroup().location]",
-      "sku": {
-        "name": "Standard_LRS",
-        "tier": "Standard"
-      },
-      "kind": "StorageV2",
-      "properties": {
-        "encryption": {
-          "services": {
-            "file": {
-              "enabled": true
-            },
-            "blob": {
-              "enabled": true
-            }
-          },
-          "keySource": "Microsoft.Storage"
-        },
-        "accessTier": "Hot"
-      },
-      "resources": [
-        {
-          "type": "blobServices/containers",
-          "apiVersion": "2021-02-01",
-          "name": "[concat('default/', parameters('ContainerName'))]",
-          "properties": {},
-          "dependsOn": [
-            "[resourceId('Microsoft.Storage/storageAccounts/', parameters('StorageAccountName'))]"
-          ]
-        }
-      ]
-    },
-    {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2020-12-01",
       "name": "[variables('AppServicePlanName')]",
