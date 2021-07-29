@@ -157,7 +157,7 @@
             },
             {
               "name": "WEBSITE_RUN_FROM_PACKAGE",
-              "value": "https://shiranstorage.blob.core.windows.net/logzio/function_code.zip"
+              "value": "https://logzioazureblobtrigger.blob.core.windows.net/logzio/logzio_function.zip"
             },
             {
               "name": "ContainerLogsPath",
