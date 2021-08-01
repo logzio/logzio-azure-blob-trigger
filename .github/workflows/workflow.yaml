@@ -12,6 +12,9 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.x'
+      - name: Copy 'src' directory and rename it 'logzio_function'
+        run: |
+          cp src logzio_function
       - name: Add Logz.io url and token to tests config file
         run: |
           sed -i 's#LOGZIO_URL\b#${{ secrets.LOGZIO_URL }}#1' tests/config.yaml
@@ -49,10 +52,10 @@ jobs:
       - name: Create 'logzio_function' zip file that contains the function package
         run: |
           npm i -g azure-functions-core-tools@3 --unsafe-perm true
-          cd src
+          cd logzio-function
           func pack
-          cp src.zip ../logzio_function.zip
-      - name: Upload logzio_function zip file to Azure storage
+          cp logzio_function.zip ../
+      - name: Upload 'logzio_function' zip file to Azure storage
         uses: azure/CLI@v1
         with:
           azcliversion: 2.0.72
