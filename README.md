@@ -32,6 +32,9 @@ Will auto-deploy the following resources:
 
 [![Deploy to Azure](https://azuredeploy.net/deploybutton.png)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Flogzio%2Flogzio-azure-blob-trigger%2Ffirst%2Fazure%2Ffunction-auto-deployment.json)
 
+* When deploying the Logz.io function, logs that were in the container before the deployment will be shipped to Logz.io.
+If these logs have already been shipped to Logz.io, we recommend that you empty the container before the deployment.
+
 ## Instructions
 
 You'll be taken to Azure Custom deployment page. Fill in all the parameters and click **Review + create** button:
@@ -54,6 +57,10 @@ If everything went well, you should see the following screen. Press **Go to reso
 
 ![Screen_3](img/Screen_3.png)
 
+## Resources
+
+![Resources](img/Resources.png)
+
 ## Supported Data Types
 
 Every new log file inside the storage account's container, will trigger the Logz.io function, which will ship the logs to Logz.io.
@@ -64,7 +71,3 @@ This function supports the following data types:
 - Text
 
 * The file name **does not** have to be with these extensions.
-
-## Resources
-
-![Resources](img/Resources.png)
