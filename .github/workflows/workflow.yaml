@@ -52,7 +52,7 @@ jobs:
       - name: Create 'logzio_function' zip file that contains the function package
         run: |
           npm i -g azure-functions-core-tools@3 --unsafe-perm true
-          cd logzio-function
+          cd logzio_function
           func pack
           cp logzio_function.zip ../
       - name: Upload 'logzio_function' zip file to Azure storage
