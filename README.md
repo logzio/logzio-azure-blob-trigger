@@ -1,6 +1,7 @@
 # Ship logs to Logz.io using Azure Blob Trigger
 
-Auto-deployment of azure resources for shipping logs from Azure storage using blob trigger.
+Auto-deployment of Azure resources for shipping logs from Azure storage using blob trigger. 
+Each new log in the container path inside the storage account, will trigger the Logz.io function that will ship the file content to Logz.io.
 
 ## Getting Started
 
@@ -63,3 +64,7 @@ This function supports the following data types:
 - Text
 
 * The file name **does not** have to be with these extensions.
+
+## Resources
+
+![Resources](img/Resources.png)
