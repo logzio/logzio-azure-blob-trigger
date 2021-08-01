@@ -11,6 +11,13 @@
         "description": "The storage account name. Must be between 3 and 24 characters in length and contains numbers and lower-case letters only."
       }
     },
+    "StorageAccountResourceName": {
+      "minLength": 1,
+      "type": "string",
+      "metadata": {
+        "description": "The resource name that contains the storage account."
+      }
+    },
     "ContainerName": {
       "defaultValue": "logs",
       "minLength": 3,
@@ -116,7 +123,7 @@
             },
             {
               "name": "AzureWebJobsStorage",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('StorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('StorageAccountName')),'2021-02-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('StorageAccountName'), ';AccountKey=', listKeys(resourceId(parameters('StorageAccountResourceName'), 'Microsoft.Storage/storageAccounts', parameters('StorageAccountName')),'2021-02-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
             },
             {
               "name": "WEBSITE_RUN_FROM_PACKAGE",
@@ -128,7 +135,7 @@
             },
             {
               "name": "StorageConnectionString",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('StorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('StorageAccountName')),'2021-02-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('StorageAccountName'), ';AccountKey=', listKeys(resourceId(parameters('StorageAccountResourceName'), 'Microsoft.Storage/storageAccounts', parameters('StorageAccountName')),'2021-02-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
             },
             {
               "name": "LogzioURL",
