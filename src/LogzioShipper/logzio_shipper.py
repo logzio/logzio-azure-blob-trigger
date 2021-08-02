@@ -81,7 +81,7 @@ class LogzioShipper:
                     self.logzio_url))
             raise
         except requests.HTTPError as e:
-            status_code = response.status_code
+            status_code = e.response.status_code
 
             if status_code == 400:
                 logger.error("The logs are bad formatted. response: {}".format(e))
