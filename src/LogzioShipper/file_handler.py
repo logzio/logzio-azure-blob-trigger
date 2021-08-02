@@ -17,7 +17,7 @@ logger.setLevel(logging.INFO)
 class FileHandler:
 
     JSON_STARTING_CHAR = '{'
-    CSV_DELIMITERS = [',', ';', '|']
+    CSV_DELIMITERS: Optional[str] = [',', ';', '|']
 
     def __init__(self, file_name: str, file_data: str) -> None:
         self.file_name = file_name
