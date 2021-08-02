@@ -44,6 +44,7 @@ You'll be taken to Azure Custom deployment page. Fill in all the parameters and 
 | Parameter | Description |
 | --- | --- |
 | Storage Account Name | The storage account name. |
+| Storage Account Resource Name | The resource name that contains the storage account. (Needed only in Logz.io Function Auto-Deployment) | 
 | Container Name | The name of the container inside the storage account |
 | Logs Path | The path of the logs in the container. Leave empty if the logs are in root directory of the container. |
 | Logzio URL | The Logz.io listener URL fot your region. (For more details, see the regions page: https://docs.logz.io/user-guide/accounts/account-region.html) |
