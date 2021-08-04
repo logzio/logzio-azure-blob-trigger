@@ -131,8 +131,8 @@
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('AppServicePlanName'))]",
         "reserved": true,
         "siteConfig": {
-          "pythonVersion": "3.9",
-          "linuxFxVersion": "PYTHON|3.9",
+          "pythonVersion": "3.8",
+          "linuxFxVersion": "PYTHON|3.8",
           "appSettings": [
             {
               "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
