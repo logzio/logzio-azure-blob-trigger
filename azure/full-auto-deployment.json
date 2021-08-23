@@ -53,7 +53,7 @@
   },
   "variables": {
     "FunctionAppName": "[concat('logzio-blob-trigger-app-', uniqueString(resourceGroup().id))]",
-    "FunctionAppStorageAccountName": "[concat('logzioblobtrigger', uniqueString(resourceGroup().id)))",
+    "FunctionAppStorageAccountName": "logzioblobtrigger",
     "AppServicePlanName": "[concat('ASP-logzio-blob-trigger-app-', uniqueString(resourceGroup().id))]",
     "AppInsightsName": "[variables('FunctionAppName')]"
   },
