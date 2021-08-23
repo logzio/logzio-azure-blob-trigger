@@ -59,11 +59,37 @@
     }
   },
   "variables": {
-    "FunctionAppName": "[concat('logzio-app-', uniqueString(resourceGroup().id))]",
-    "AppServicePlanName": "[concat('ASP-', variables('FunctionAppName'), '-', uniqueString(resourceGroup().id))]",
+    "FunctionAppName": "[concat('logzio-blob-trigger-app-', uniqueString(resourceGroup().id))]",
+    "FunctionAppStorageAccountName": "[concat('logzioblobtrigger', uniqueString(resourceGroup().id)))",
+    "AppServicePlanName": "[concat('ASP-logzio-blob-trigger-app-', uniqueString(resourceGroup().id))]",
     "AppInsightsName": "[variables('FunctionAppName')]"
   },
   "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-02-01",
+      "name": "[variables('FunctionAppStorageAccountName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        },
+        "accessTier": "Hot"
+      }
+    },
     {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2020-12-01",
