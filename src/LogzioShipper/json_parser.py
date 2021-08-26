@@ -2,6 +2,7 @@ import logging
 import json
 
 from typing import Generator
+from io import BytesIO
 from .file_parser import FileParser
 
 
@@ -11,15 +12,18 @@ logger.setLevel(logging.INFO)
 
 class JsonParser(FileParser):
 
-    def __init__(self, file_data: str) -> None:
-        super().__init__(file_data)
+    def __init__(self, file_stream: BytesIO) -> None:
+        super().__init__(file_stream)
 
     def parse_file(self) -> Generator:
-        jsons = self.file_data.split('\n')
+        while True:
+            log = self.file_stream.readline().decode("utf-8").rstrip()
 
-        for json_data in jsons:
+            if log == '':
+                break
+
             try:
-                json.loads(json_data)
-                yield json_data
+                json.loads(log)
+                yield log
             except ValueError:
-                logger.error("One of the jsons is not valid.")
+                logger.error("The following json is not valid: {}".format(log))

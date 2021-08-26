@@ -1,11 +1,12 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Generator
+from io import BufferedIOBase
 
 
-class FileParser:
+class FileParser(ABC):
 
-    def __init__(self, file_data: str) -> None:
-        self.file_data = file_data
+    def __init__(self, file_stream:BufferedIOBase) -> None:
+        self.file_stream = file_stream
 
     @abstractmethod
     def parse_file(self) -> Generator:

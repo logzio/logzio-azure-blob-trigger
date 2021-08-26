@@ -25,14 +25,14 @@ class LogzioShipper:
     CONNECTION_TIMEOUT_SECONDS = 5
 
     def __init__(self, logzio_url: str, token: str) -> None:
-        self.logzio_url = "{0}/?token={1}&type=azure".format(logzio_url, token)
+        self.logzio_url = "{0}/?token={1}&type=azure_blob_trigger".format(logzio_url, token)
         self.logs = []
         self.bulk_size = 0
 
     def add_log_to_send(self, log: Any) -> None:
         log_size = len(log)
 
-        if not self.__is_log_valid_to_be_sent(log_size):
+        if not self.__is_log_valid_to_be_sent(log, log_size):
             return
 
         if not self.bulk_size + log_size > LogzioShipper.MAX_BULK_SIZE_BYTES:
@@ -45,7 +45,8 @@ class LogzioShipper:
         except Exception:
             raise
 
-        self.__reset_after_send(log, log_size)
+        self.logs.append(log)
+        self.bulk_size = log_size
 
     def send_to_logzio(self) -> None:
         if self.logs is None:
@@ -62,6 +63,7 @@ class LogzioShipper:
                                                                timeout=LogzioShipper.CONNECTION_TIMEOUT_SECONDS)
             response.raise_for_status()
             logger.info("Successfully sent bulk of {} bytes to Logz.io.".format(self.bulk_size))
+            self.__reset_logs()
         except requests.ConnectionError as e:
             logger.error(
                 "Can't establish connection to {0} url. Please make sure your url is a Logz.io valid url. Max retries of {1} has reached. response: {2}".format(
@@ -97,11 +99,11 @@ class LogzioShipper:
             logger.error("Something went wrong. response: {}".format(e))
             raise
 
-    def __is_log_valid_to_be_sent(self, log_size: int) -> bool:
+    def __is_log_valid_to_be_sent(self, log: str, log_size: int) -> bool:
         if log_size > LogzioShipper.MAX_LOG_SIZE_BYTES:
             logger.error(
-                "One of the log's size is greater than the max log size - {} bytes, that can be sent to Logz.io".format(
-                    LogzioShipper.MAX_LOG_SIZE_BYTES))
+                "The following log's size is greater than the max log size - {0} bytes, that can be sent to Logz.io: {1}".format(
+                    LogzioShipper.MAX_LOG_SIZE_BYTES, log))
 
             return False
 
@@ -131,7 +133,6 @@ class LogzioShipper:
 
         return session
 
-    def __reset_after_send(self, log: Any, log_size: int) -> None:
+    def __reset_logs(self):
         self.logs.clear()
-        self.logs.append(log)
-        self.bulk_size = log_size
+        self.bulk_size = 0
