@@ -49,6 +49,12 @@
       "metadata": {
         "description": "Your Logz.io logs token. (Can be retrieved from the Manage Token page.)"
       }
+    },
+    "MultilineRegex": {
+      "type": "string",
+      "metadata": {
+        "description": "The regex that matches the multiline logs in text blob files (Keep empty if you do not use multiline logs in your text blob files)."
+      }
     }
   },
   "variables": {
@@ -171,6 +177,10 @@
             {
               "name": "FUNCTIONS_EXTENSION_VERSION",
               "value": "~3"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_PROCESS_COUNT",
+              "value": "7"
             },
             {
               "name": "FUNCTIONS_WORKER_RUNTIME",
