@@ -3,7 +3,7 @@ import os
 import csv
 import zlib
 
-from typing import Optional, TextIO
+from typing import Optional
 from io import BytesIO, IOBase
 from .file_parser import FileParser
 from .json_parser import JsonParser
