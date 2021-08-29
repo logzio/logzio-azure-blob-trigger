@@ -51,6 +51,7 @@
       }
     },
     "MultilineRegex": {
+      "defaultValue": "",
       "type": "string",
       "metadata": {
         "description": "The regex that matches the multiline logs in text blob files. Leave empty if you do not use multiline logs in your text blob files."
