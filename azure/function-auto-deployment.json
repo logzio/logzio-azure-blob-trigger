@@ -172,7 +172,7 @@
             },
             {
               "name": "MultilineRegex",
-              "value": "[parameters('MultilineRegex')]"
+              "value": "[if(equals(parameters('MultilineRegex'), ''), '', parameter('MultilineRegex')]"
             },
             {
               "name": "StorageConnectionString",
