@@ -43,9 +43,9 @@ class TextParser(FileParser):
     def __get_multiline_log(self, multiline_log: str) -> Optional[str]:
         while True:
             if re.fullmatch(self.multiline_regex, multiline_log) is not None:
-                return "{{\"message\": \"{}\"}}".format(multiline_log)
+                return "{{\"message\": \"{}\"}}".format(multiline_log.replace('\n', ' '))
             elif re.fullmatch(self.multiline_regex, multiline_log.rstrip()) is not None:
-                return "{{\"message\": \"{}\"}}".format(multiline_log.rstrip())
+                return "{{\"message\": \"{}\"}}".format(multiline_log.rstrip().replace('\n', ' '))
 
             line = self.file_stream.readline().decode("utf-8")
 

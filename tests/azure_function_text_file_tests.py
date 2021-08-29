@@ -70,7 +70,7 @@ class TestAzureFunctionTextFile(unittest.TestCase):
         self.text_multiline_bad_regex_file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_MULTILINE_LOG_FILE,
                                                                  TestAzureFunctionTextFile.text_multiline_stream,
                                                                  TestAzureFunctionTextFile.text_multiline_size)
-        self.text_parser = TextParser(TestAzureFunctionTextFile.text_stream)
+        self.text_parser = TextParser(TestAzureFunctionTextFile.text_stream, '')
         self.text_multiline_parser = TextParser(TestAzureFunctionTextFile.text_multiline_stream,
                                                 TestAzureFunctionTextFile.MULTILINE_REGEX)
 
@@ -134,9 +134,8 @@ class TestAzureFunctionTextFile(unittest.TestCase):
         text_bytes = self.tests_utils.get_parsed_logs_bytes(self.text_multiline_parser)
 
         self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
-        self.assertEqual(stream_logs_num, sent_logs_num)
-        self.assertEqual(text_bytes,
-                         sent_bytes + stream_logs_num / (TestAzureFunctionTextFile.MULTILINE_REGEX.count('\n') + 1))
+        self.assertEqual(stream_logs_num / 2, sent_logs_num)
+        self.assertEqual(text_bytes, sent_bytes)
 
     @httpretty.activate
     def test_send_text_bad_multiline_data(self) -> None:
