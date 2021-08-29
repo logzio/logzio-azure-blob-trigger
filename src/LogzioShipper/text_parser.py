@@ -12,12 +12,14 @@ logger.setLevel(logging.INFO)
 
 class TextParser(FileParser):
 
-    def __init__(self, file_stream: BytesIO, multiline_regex: Optional[str]) -> None:
+    NO_REGEX_VALUE = 'NO_REGEX'
+
+    def __init__(self, file_stream: BytesIO, multiline_regex: str) -> None:
         super().__init__(file_stream)
         self.multiline_regex = multiline_regex
 
     def parse_file(self) -> Generator:
-        if self.multiline_regex is not None:
+        if self.multiline_regex != TextParser.NO_REGEX_VALUE:
             while True:
                 log = self.file_stream.readline().decode("utf-8")
 

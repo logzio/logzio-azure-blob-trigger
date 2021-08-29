@@ -50,6 +50,7 @@ class TestAzureFunctionTextFile(unittest.TestCase):
                                                       TestAzureFunctionTextFile.text_gz_stream,
                                                       TestAzureFunctionTextFile.text_multiline_gz_stream])
 
+        os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME] = TextParser.NO_REGEX_VALUE
         self.text_file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_LOG_FILE,
                                              TestAzureFunctionTextFile.text_stream,
                                              TestAzureFunctionTextFile.text_size)
@@ -69,7 +70,7 @@ class TestAzureFunctionTextFile(unittest.TestCase):
         self.text_multiline_bad_regex_file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_MULTILINE_LOG_FILE,
                                                                  TestAzureFunctionTextFile.text_multiline_stream,
                                                                  TestAzureFunctionTextFile.text_multiline_size)
-        self.text_parser = TextParser(TestAzureFunctionTextFile.text_stream, None)
+        self.text_parser = TextParser(TestAzureFunctionTextFile.text_stream, TextParser.NO_REGEX_VALUE)
         self.text_multiline_parser = TextParser(TestAzureFunctionTextFile.text_multiline_stream,
                                                 TestAzureFunctionTextFile.MULTILINE_REGEX)
 

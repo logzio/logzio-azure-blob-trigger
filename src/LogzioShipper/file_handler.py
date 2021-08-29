@@ -101,7 +101,7 @@ class FileHandler:
         if delimiter is not None:
             return CsvParser(self.file_stream, delimiter)
 
-        return TextParser(self.file_stream, os.getenv(FileHandler.MULTILINE_REGEX_ENVIRON_NAME))
+        return TextParser(self.file_stream, os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME])
 
     def __is_file_csv(self, logs_sample: list) -> Optional[str]:
         sample = '\n'.join(logs_sample)
