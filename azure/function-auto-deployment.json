@@ -171,6 +171,10 @@
               "value": "[if(equals(parameters('LogsPath'), ''), concat(parameters('ContainerName'), '/{name}'), concat(parameters('ContainerName'), '/', parameters('LogsPath'), '/{name}'))]"
             },
             {
+              "name": "MultilineRegex",
+              "value": "[parameters('MultilineRegex')]"
+            },
+            {
               "name": "StorageConnectionString",
               "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('StorageAccountName'), ';AccountKey=', listKeys(resourceId(parameters('StorageAccountResourceName'), 'Microsoft.Storage/storageAccounts', parameters('StorageAccountName')),'2021-02-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
             },
