@@ -31,7 +31,8 @@ class FileHandler:
         self.file_stream = self.__get_seekable_file_stream(file_stream)
         self.file_size = file_size
         self.file_parser = self.__get_file_parser()
-        self.logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
+        self.logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
+                                            os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
     def handle_file(self) -> None:
         if self.file_size == 0:

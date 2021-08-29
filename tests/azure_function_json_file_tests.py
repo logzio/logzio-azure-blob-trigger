@@ -23,9 +23,9 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
     JSON_GZ_LOG_FILE = "{}.gz".format(JSON_LOG_FILE)
 
     json_stream: BytesIO = None
-    json_size: int = None
+    json_size = 0
     json_bad_logs_stream: BytesIO = None
-    json_bad_logs_size: int = None
+    json_bad_logs_size = 0
     json_gz_stream: BytesIO = None
 
     @classmethod
@@ -35,14 +35,15 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
         cls.json_stream, cls.json_size = TestsUtils.get_file_stream_and_size(cls.JSON_LOG_FILE)
         cls.json_bad_logs_stream, cls.json_bad_logs_size = TestsUtils.get_file_stream_and_size(
             cls.JSON_WITH_BAD_LINES_LOG_FILE)
-        cls.json_gz_stream = TestsUtils.get_file_gz_stream(cls.json_stream)
+        cls.json_gz_stream = TestsUtils.get_gz_file_stream(cls.json_stream)
 
     def setUp(self) -> None:
-        TestAzureFunctionJsonFile.json_stream.seek(0)
-        TestAzureFunctionJsonFile.json_bad_logs_stream.seek(0)
-        TestAzureFunctionJsonFile.json_gz_stream.seek(0)
-
         self.tests_utils = TestsUtils()
+
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionJsonFile.json_stream,
+                                                      TestAzureFunctionJsonFile.json_bad_logs_stream,
+                                                      TestAzureFunctionJsonFile.json_gz_stream])
+
         self.json_file_handler = FileHandler(TestAzureFunctionJsonFile.JSON_LOG_FILE,
                                              TestAzureFunctionJsonFile.json_stream,
                                              TestAzureFunctionJsonFile.json_size)
@@ -54,6 +55,10 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
                                                 TestAzureFunctionJsonFile.json_size)
         self.json_parser = JsonParser(TestAzureFunctionJsonFile.json_stream)
 
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionJsonFile.json_stream,
+                                                      TestAzureFunctionJsonFile.json_bad_logs_stream,
+                                                      TestAzureFunctionJsonFile.json_gz_stream])
+
     def test_identify_json_file(self) -> None:
         self.assertEqual(JsonParser, type(self.json_file_handler.file_parser))
         self.assertEqual(JsonParser, type(self.json_gz_file_handler.file_parser))
@@ -62,7 +67,7 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
         parsed_logs_num = self.tests_utils.get_parsed_logs_num(self.json_parser)
 
         TestAzureFunctionJsonFile.json_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionJsonFile.json_stream)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionJsonFile.json_stream)
 
         self.assertEqual(stream_logs_num, parsed_logs_num)
 
@@ -74,7 +79,7 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
                                                                                             httpretty.latest_requests())
 
         TestAzureFunctionJsonFile.json_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionJsonFile.json_stream)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionJsonFile.json_stream)
 
         self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
         self.assertEqual(stream_logs_num, sent_logs_num)
@@ -88,7 +93,7 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
             self.json_bad_logs_file_handler, httpretty.latest_requests())
 
         TestAzureFunctionJsonFile.json_bad_logs_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionJsonFile.json_bad_logs_stream)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionJsonFile.json_bad_logs_stream)
 
         self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
         self.assertNotEqual(stream_logs_num, sent_logs_num)

@@ -26,7 +26,7 @@ class TestAzureFunctionGeneral(unittest.TestCase):
     BAD_CONNECTION_ADAPTER_URL = 'bad://connection.adapter:1234'
 
     json_stream: BytesIO = None
-    json_size: int = None
+    json_size = 0
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -35,12 +35,15 @@ class TestAzureFunctionGeneral(unittest.TestCase):
         cls.json_stream, cls.json_size = TestsUtils.get_file_stream_and_size(cls.JSON_LOG_FILE)
 
     def setUp(self) -> None:
-        TestAzureFunctionGeneral.json_stream.seek(0)
-
         self.tests_utils = TestsUtils()
+
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionGeneral.json_stream])
+
         self.file_handler = FileHandler(TestAzureFunctionGeneral.JSON_LOG_FILE, TestAzureFunctionGeneral.json_stream,
                                         TestAzureFunctionGeneral.json_size)
         self.file_parser = JsonParser(TestAzureFunctionGeneral.json_stream)
+
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionGeneral.json_stream])
 
     @httpretty.activate
     def test_send_retry_status_500(self):

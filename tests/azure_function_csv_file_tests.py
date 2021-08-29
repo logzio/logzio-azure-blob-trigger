@@ -26,9 +26,9 @@ class TestAzureFunctionCsvFile(unittest.TestCase):
     CSV_SEMICOLON_DELIMITER = ';'
 
     csv_comma_delimiter_stream: BytesIO = None
-    csv_comma_delimiter_size: int = 0
+    csv_comma_delimiter_size = 0
     csv_semicolon_delimiter_stream: BytesIO = None
-    csv_semicolon_delimiter_size: int = 0
+    csv_semicolon_delimiter_size = 0
     csv_comma_delimiter_gz_stream: BytesIO = None
     csv_semicolon_delimiter_gz_stream: BytesIO = None
 
@@ -40,16 +40,17 @@ class TestAzureFunctionCsvFile(unittest.TestCase):
             cls.CSV_COMMA_DELIMITER_LOG_FILE)
         cls.csv_semicolon_delimiter_stream, cls.csv_semicolon_delimiter_size = TestsUtils.get_file_stream_and_size(
             cls.CSV_SEMICOLON_DELIMITER_FILE)
-        cls.csv_comma_delimiter_gz_stream = TestsUtils.get_file_gz_stream(cls.csv_comma_delimiter_stream)
-        cls.csv_semicolon_delimiter_gz_stream = TestsUtils.get_file_gz_stream(cls.csv_semicolon_delimiter_stream)
+        cls.csv_comma_delimiter_gz_stream = TestsUtils.get_gz_file_stream(cls.csv_comma_delimiter_stream)
+        cls.csv_semicolon_delimiter_gz_stream = TestsUtils.get_gz_file_stream(cls.csv_semicolon_delimiter_stream)
 
     def setUp(self) -> None:
-        TestAzureFunctionCsvFile.csv_comma_delimiter_stream.seek(0)
-        TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream.seek(0)
-        TestAzureFunctionCsvFile.csv_comma_delimiter_gz_stream.seek(0)
-        TestAzureFunctionCsvFile.csv_semicolon_delimiter_gz_stream.seek(0)
-
         self.tests_utils = TestsUtils()
+
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionCsvFile.csv_comma_delimiter_stream,
+                                                      TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream,
+                                                      TestAzureFunctionCsvFile.csv_comma_delimiter_gz_stream,
+                                                      TestAzureFunctionCsvFile.csv_semicolon_delimiter_gz_stream])
+
         self.csv_comma_file_handler = FileHandler(TestAzureFunctionCsvFile.CSV_COMMA_DELIMITER_LOG_FILE,
                                                   TestAzureFunctionCsvFile.csv_comma_delimiter_stream,
                                                   TestAzureFunctionCsvFile.csv_comma_delimiter_size)
@@ -67,6 +68,11 @@ class TestAzureFunctionCsvFile(unittest.TestCase):
         self.csv_semicolon_parser = CsvParser(TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream,
                                               TestAzureFunctionCsvFile.CSV_SEMICOLON_DELIMITER)
 
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionCsvFile.csv_comma_delimiter_stream,
+                                                      TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream,
+                                                      TestAzureFunctionCsvFile.csv_comma_delimiter_gz_stream,
+                                                      TestAzureFunctionCsvFile.csv_semicolon_delimiter_gz_stream])
+
     def test_identify_csv_comma_delimiter_file(self) -> None:
         self.assertEqual(CsvParser, type(self.csv_comma_file_handler.file_parser))
         self.assertEqual(CsvParser, type(self.csv_comma_gz_file_handler.file_parser))
@@ -79,7 +85,7 @@ class TestAzureFunctionCsvFile(unittest.TestCase):
         parsed_logs_num = self.tests_utils.get_parsed_logs_num(self.csv_comma_parser)
 
         TestAzureFunctionCsvFile.csv_comma_delimiter_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(
             TestAzureFunctionCsvFile.csv_comma_delimiter_stream)
 
         self.assertEqual(stream_logs_num - 1, parsed_logs_num)
@@ -88,7 +94,7 @@ class TestAzureFunctionCsvFile(unittest.TestCase):
         parsed_logs_num = self.tests_utils.get_parsed_logs_num(self.csv_semicolon_parser)
 
         TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(
             TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream)
 
         self.assertEqual(stream_logs_num - 1, parsed_logs_num)
@@ -101,7 +107,7 @@ class TestAzureFunctionCsvFile(unittest.TestCase):
             self.csv_comma_file_handler, httpretty.latest_requests())
 
         TestAzureFunctionCsvFile.csv_comma_delimiter_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionCsvFile.csv_comma_delimiter_stream)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionCsvFile.csv_comma_delimiter_stream)
 
         TestAzureFunctionCsvFile.csv_comma_delimiter_stream.seek(0)
         csv_bytes = self.tests_utils.get_parsed_logs_bytes(self.csv_comma_parser)
@@ -118,7 +124,7 @@ class TestAzureFunctionCsvFile(unittest.TestCase):
             self.csv_semicolon_file_handler, httpretty.latest_requests())
 
         TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream)
 
         TestAzureFunctionCsvFile.csv_semicolon_delimiter_stream.seek(0)
         csv_bytes = self.tests_utils.get_parsed_logs_bytes(self.csv_semicolon_parser)

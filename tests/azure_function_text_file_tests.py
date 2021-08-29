@@ -26,9 +26,9 @@ class TestAzureFunctionTextFile(unittest.TestCase):
     BAD_MULTILINE_REGEX = 'WARNING:\n[a-zA-Z. ]+'
 
     text_stream: BytesIO = None
-    text_size: int = 0
+    text_size = 0
     text_multiline_stream: BytesIO = None
-    text_multiline_size: int = 0
+    text_multiline_size = 0
     text_gz_stream: BytesIO = None
     text_multiline_gz_stream: BytesIO = None
 
@@ -39,16 +39,16 @@ class TestAzureFunctionTextFile(unittest.TestCase):
         cls.text_stream, cls.text_size = TestsUtils.get_file_stream_and_size(cls.TEXT_LOG_FILE)
         cls.text_multiline_stream, cls.text_multiline_size = TestsUtils.get_file_stream_and_size(
             cls.TEXT_MULTILINE_LOG_FILE)
-        cls.text_gz_stream = TestsUtils.get_file_gz_stream(cls.text_stream)
-        cls.text_multiline_gz_stream = TestsUtils.get_file_gz_stream(cls.text_multiline_stream)
+        cls.text_gz_stream = TestsUtils.get_gz_file_stream(cls.text_stream)
+        cls.text_multiline_gz_stream = TestsUtils.get_gz_file_stream(cls.text_multiline_stream)
 
     def setUp(self) -> None:
-        TestAzureFunctionTextFile.text_stream.seek(0)
-        TestAzureFunctionTextFile.text_multiline_stream.seek(0)
-        TestAzureFunctionTextFile.text_gz_stream.seek(0)
-        TestAzureFunctionTextFile.text_multiline_gz_stream.seek(0)
-
         self.tests_utils = TestsUtils()
+
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionTextFile.text_stream,
+                                                      TestAzureFunctionTextFile.text_multiline_stream,
+                                                      TestAzureFunctionTextFile.text_gz_stream,
+                                                      TestAzureFunctionTextFile.text_multiline_gz_stream])
 
         os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME] = ''
         self.text_file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_LOG_FILE,
@@ -74,6 +74,11 @@ class TestAzureFunctionTextFile(unittest.TestCase):
         self.text_multiline_parser = TextParser(TestAzureFunctionTextFile.text_multiline_stream,
                                                 TestAzureFunctionTextFile.MULTILINE_REGEX)
 
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionTextFile.text_stream,
+                                                      TestAzureFunctionTextFile.text_multiline_stream,
+                                                      TestAzureFunctionTextFile.text_gz_stream,
+                                                      TestAzureFunctionTextFile.text_multiline_gz_stream])
+
     def test_identify_text_file(self) -> None:
         self.assertEqual(TextParser, type(self.text_file_handler.file_parser))
         self.assertEqual(TextParser, type(self.text_gz_file_handler.file_parser))
@@ -86,7 +91,7 @@ class TestAzureFunctionTextFile(unittest.TestCase):
         parsed_logs_num = self.tests_utils.get_parsed_logs_num(self.text_parser)
 
         TestAzureFunctionTextFile.text_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionTextFile.text_stream)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionTextFile.text_stream)
 
         self.assertEqual(stream_logs_num, parsed_logs_num)
 
@@ -94,9 +99,9 @@ class TestAzureFunctionTextFile(unittest.TestCase):
         parsed_logs_num = self.tests_utils.get_parsed_logs_num(self.text_multiline_parser)
 
         TestAzureFunctionTextFile.text_multiline_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionTextFile.text_stream)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionTextFile.text_multiline_stream)
 
-        self.assertEqual(stream_logs_num, parsed_logs_num)
+        self.assertEqual(stream_logs_num / 2, parsed_logs_num)
 
     @httpretty.activate
     def test_send_text_data(self) -> None:
@@ -106,7 +111,7 @@ class TestAzureFunctionTextFile(unittest.TestCase):
                                                                                             httpretty.latest_requests())
 
         TestAzureFunctionTextFile.text_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionTextFile.text_stream)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionTextFile.text_stream)
 
         TestAzureFunctionTextFile.text_stream.seek(0)
         text_bytes = self.tests_utils.get_parsed_logs_bytes(self.text_parser)
@@ -123,7 +128,7 @@ class TestAzureFunctionTextFile(unittest.TestCase):
             self.text_multiline_file_handler, httpretty.latest_requests())
 
         TestAzureFunctionTextFile.text_multiline_stream.seek(0)
-        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionTextFile.text_multiline_stream)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionTextFile.text_multiline_stream)
 
         TestAzureFunctionTextFile.text_multiline_stream.seek(0)
         text_bytes = self.tests_utils.get_parsed_logs_bytes(self.text_multiline_parser)
