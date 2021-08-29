@@ -74,7 +74,14 @@ The Logz.io function supports the following data types:
 - Text (supports multiline text - MultilineRegex parameter)
 
 * The file name **does not** have to be with these extensions.
-* Supports gzip files.
+
+## Supported File Formats
+
+The Logz.io function supports the following file formats:
+
+- Gzip
+
+* The file name must have the format extension.
 
 ## Searching in Logz.io
 
