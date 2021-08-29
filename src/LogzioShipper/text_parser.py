@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 
 class TextParser(FileParser):
 
-    def __init__(self, file_stream: BytesIO, multiline_regex: str = '') -> None:
+    def __init__(self, file_stream: BytesIO, multiline_regex: str) -> None:
         super().__init__(file_stream)
         self.multiline_regex = multiline_regex
 
