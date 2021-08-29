@@ -19,7 +19,12 @@ class TextParser(FileParser):
     def parse_file(self) -> Generator:
         if self.multiline_regex != '':
             while True:
-                multiline_log = self.__get_multiline_log(self.file_stream.readline().decode("utf-8"))
+                log = self.file_stream.readline().decode("utf-8")
+
+                if log == '':
+                    break
+
+                multiline_log = self.__get_multiline_log(log)
 
                 if multiline_log is None:
                     logger.error("There is no match using the regex {}".format(self.multiline_regex))

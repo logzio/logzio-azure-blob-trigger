@@ -20,113 +20,159 @@ class TestAzureFunctionTextFile(unittest.TestCase):
 
     TEXT_LOG_FILE = 'tests/logs/text'
     TEXT_MULTILINE_LOG_FILE = 'tests/logs/text_multiline'
+    TEXT_GZ_LOG_FILE = "{}.gz".format(TEXT_LOG_FILE)
+    TEXT_MULTILINE_GZ_LOG_FILE = "{}.gz".format(TEXT_MULTILINE_LOG_FILE)
     MULTILINE_REGEX = '(ERROR|INFO):\n[a-zA-Z. ]+'
     BAD_MULTILINE_REGEX = 'WARNING:\n[a-zA-Z. ]+'
 
-    tests_utils: TestsUtils = None
     text_stream: BytesIO = None
     text_size: int = 0
     text_multiline_stream: BytesIO = None
     text_multiline_size: int = 0
+    text_gz_stream: BytesIO = None
+    text_multiline_gz_stream: BytesIO = None
 
     @classmethod
     def setUpClass(cls) -> None:
-        TestAzureFunctionTextFile.tests_utils = TestsUtils()
+        TestsUtils.set_up()
 
-        results = TestAzureFunctionTextFile.tests_utils.get_file_stream_and_size(
-            TestAzureFunctionTextFile.TEXT_LOG_FILE)
-        TestAzureFunctionTextFile.text_stream = results['file_stream']
-        TestAzureFunctionTextFile.text_size = results['file_size']
-
-        results = TestAzureFunctionTextFile.tests_utils.get_file_stream_and_size(
-            TestAzureFunctionTextFile.TEXT_MULTILINE_LOG_FILE)
-        TestAzureFunctionTextFile.text_multiline_stream = results['file_stream']
-        TestAzureFunctionTextFile.text_multiline_size = results['file_size']
+        cls.text_stream, cls.text_size = TestsUtils.get_file_stream_and_size(cls.TEXT_LOG_FILE)
+        cls.text_multiline_stream, cls.text_multiline_size = TestsUtils.get_file_stream_and_size(
+            cls.TEXT_MULTILINE_LOG_FILE)
+        cls.text_gz_stream = TestsUtils.get_file_gz_stream(cls.text_stream)
+        cls.text_multiline_gz_stream = TestsUtils.get_file_gz_stream(cls.text_multiline_stream)
 
     def setUp(self) -> None:
         TestAzureFunctionTextFile.text_stream.seek(0)
         TestAzureFunctionTextFile.text_multiline_stream.seek(0)
-        os.environ['MultilineRegex'] = ''
+        TestAzureFunctionTextFile.text_gz_stream.seek(0)
+        TestAzureFunctionTextFile.text_multiline_gz_stream.seek(0)
+
+        self.tests_utils = TestsUtils()
+
+        os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME] = ''
+        self.text_file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_LOG_FILE,
+                                             TestAzureFunctionTextFile.text_stream,
+                                             TestAzureFunctionTextFile.text_size)
+        self.text_gz_file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_GZ_LOG_FILE,
+                                                TestAzureFunctionTextFile.text_gz_stream,
+                                                TestAzureFunctionTextFile.text_size)
+
+        os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME] = TestAzureFunctionTextFile.MULTILINE_REGEX
+        self.text_multiline_file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_MULTILINE_LOG_FILE,
+                                                       TestAzureFunctionTextFile.text_multiline_stream,
+                                                       TestAzureFunctionTextFile.text_multiline_size)
+        self.text_multiline_gz_file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_MULTILINE_GZ_LOG_FILE,
+                                                          TestAzureFunctionTextFile.text_multiline_gz_stream,
+                                                          TestAzureFunctionTextFile.text_multiline_size)
+
+        os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME] = TestAzureFunctionTextFile.BAD_MULTILINE_REGEX
+        self.text_multiline_bad_regex_file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_MULTILINE_LOG_FILE,
+                                                                 TestAzureFunctionTextFile.text_multiline_stream,
+                                                                 TestAzureFunctionTextFile.text_multiline_size)
+        self.text_parser = TextParser(TestAzureFunctionTextFile.text_stream)
+        self.text_multiline_parser = TextParser(TestAzureFunctionTextFile.text_multiline_stream,
+                                                TestAzureFunctionTextFile.MULTILINE_REGEX)
 
     def test_identify_text_file(self) -> None:
-        file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_LOG_FILE,
-                                   TestAzureFunctionTextFile.text_stream,
-                                   TestAzureFunctionTextFile.text_size)
+        self.assertEqual(TextParser, type(self.text_file_handler.file_parser))
+        self.assertEqual(TextParser, type(self.text_gz_file_handler.file_parser))
 
-        self.assertEqual(TextParser, type(file_handler.file_parser))
+    def test_identify_text_multiline_file(self) -> None:
+        self.assertEqual(TextParser, type(self.text_multiline_file_handler.file_parser))
+        self.assertEqual(TextParser, type(self.text_multiline_gz_file_handler.file_parser))
 
     def test_parse_text_file(self) -> None:
-        file_parser = TextParser(TestAzureFunctionTextFile.text_stream)
-        parsed_logs_num = TestAzureFunctionTextFile.tests_utils.get_parsed_logs_num(file_parser)
+        parsed_logs_num = self.tests_utils.get_parsed_logs_num(self.text_parser)
 
         TestAzureFunctionTextFile.text_stream.seek(0)
-        stream_logs_num = TestAzureFunctionTextFile.tests_utils.get_stream_logs_num(
-            TestAzureFunctionTextFile.text_stream)
+        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionTextFile.text_stream)
+
+        self.assertEqual(stream_logs_num, parsed_logs_num)
+
+    def test_parse_text_multiline_file(self) -> None:
+        parsed_logs_num = self.tests_utils.get_parsed_logs_num(self.text_multiline_parser)
+
+        TestAzureFunctionTextFile.text_multiline_stream.seek(0)
+        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionTextFile.text_stream)
 
         self.assertEqual(stream_logs_num, parsed_logs_num)
 
     @httpretty.activate
     def test_send_text_data(self) -> None:
-        httpretty.register_uri(httpretty.POST, os.environ['LogzioURL'], status=200)
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=200)
 
-        file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_LOG_FILE, TestAzureFunctionTextFile.text_stream,
-                                   TestAzureFunctionTextFile.text_size)
-
-        results = TestAzureFunctionTextFile.tests_utils.get_sending_file_results(file_handler,
-                                                                                 httpretty.latest_requests())
+        requests_num, sent_logs_num, sent_bytes = self.tests_utils.get_sending_file_results(self.text_file_handler,
+                                                                                            httpretty.latest_requests())
 
         TestAzureFunctionTextFile.text_stream.seek(0)
-        stream_logs_num = TestAzureFunctionTextFile.tests_utils.get_stream_logs_num(
-            TestAzureFunctionTextFile.text_stream)
+        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionTextFile.text_stream)
 
         TestAzureFunctionTextFile.text_stream.seek(0)
-        file_parser = TextParser(TestAzureFunctionTextFile.text_stream)
-        text_bytes = TestAzureFunctionTextFile.tests_utils.get_parsed_logs_bytes(file_parser)
+        text_bytes = self.tests_utils.get_parsed_logs_bytes(self.text_parser)
 
-        self.assertEqual(math.ceil(results['sent_bytes'] / LogzioShipper.MAX_BULK_SIZE_BYTES), results['requests_num'])
-        self.assertEqual(stream_logs_num, results['sent_logs_num'])
-        self.assertEqual(text_bytes, results['sent_bytes'])
+        self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
+        self.assertEqual(stream_logs_num, sent_logs_num)
+        self.assertEqual(text_bytes, sent_bytes)
 
     @httpretty.activate
     def test_send_text_multiline_data(self) -> None:
-        httpretty.register_uri(httpretty.POST, os.environ['LogzioURL'], status=200)
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=200)
 
-        os.environ['MultilineRegex'] = TestAzureFunctionTextFile.MULTILINE_REGEX
-
-        file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_MULTILINE_LOG_FILE, TestAzureFunctionTextFile.text_multiline_stream,
-                                   TestAzureFunctionTextFile.text_multiline_size)
-
-        results = TestAzureFunctionTextFile.tests_utils.get_sending_file_results(file_handler,
-                                                                                 httpretty.latest_requests())
+        requests_num, sent_logs_num, sent_bytes = self.tests_utils.get_sending_file_results(
+            self.text_multiline_file_handler, httpretty.latest_requests())
 
         TestAzureFunctionTextFile.text_multiline_stream.seek(0)
-        stream_logs_num = TestAzureFunctionTextFile.tests_utils.get_stream_logs_num(
-            TestAzureFunctionTextFile.text_multiline_stream)
+        stream_logs_num = self.tests_utils.get_stream_logs_num(TestAzureFunctionTextFile.text_multiline_stream)
 
         TestAzureFunctionTextFile.text_multiline_stream.seek(0)
-        file_parser = TextParser(TestAzureFunctionTextFile.text_multiline_stream, os.environ['MultilineRegex'])
-        text_bytes = TestAzureFunctionTextFile.tests_utils.get_parsed_logs_bytes(file_parser)
+        text_bytes = self.tests_utils.get_parsed_logs_bytes(self.text_multiline_parser)
 
-        self.assertEqual(math.ceil(results['sent_bytes'] / LogzioShipper.MAX_BULK_SIZE_BYTES), results['requests_num'])
-        self.assertEqual(stream_logs_num, results['sent_logs_num'])
-        self.assertEqual(text_bytes, results['sent_bytes'] + stream_logs_num / (os.environ['MultilineRegex'].count('\n') + 1))
+        self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
+        self.assertEqual(stream_logs_num, sent_logs_num)
+        self.assertEqual(text_bytes,
+                         sent_bytes + stream_logs_num / (TestAzureFunctionTextFile.MULTILINE_REGEX.count('\n') + 1))
 
     @httpretty.activate
     def test_send_text_bad_multiline_data(self) -> None:
-        httpretty.register_uri(httpretty.POST, os.environ['LogzioURL'], status=200)
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=200)
 
-        os.environ['MultilineRegex'] = TestAzureFunctionTextFile.BAD_MULTILINE_REGEX
+        requests_num, sent_logs_num, sent_bytes = self.tests_utils.get_sending_file_results(
+            self.text_multiline_bad_regex_file_handler, httpretty.latest_requests())
 
-        file_handler = FileHandler(TestAzureFunctionTextFile.TEXT_MULTILINE_LOG_FILE,
-                                   TestAzureFunctionTextFile.text_multiline_stream,
-                                   TestAzureFunctionTextFile.text_multiline_size)
+        self.assertEqual(0, requests_num)
+        self.assertEqual(0, sent_logs_num)
+        self.assertEqual(0, sent_bytes)
 
-        results = TestAzureFunctionTextFile.tests_utils.get_sending_file_results(file_handler,
-                                                                                 httpretty.latest_requests())
+    @httpretty.activate
+    def test_send_text_gz_data(self) -> None:
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=200)
 
-        self.assertEqual(math.ceil(results['sent_bytes'] / LogzioShipper.MAX_BULK_SIZE_BYTES), results['requests_num'])
-        self.assertEqual(0, results['sent_logs_num'])
-        self.assertEqual(0, results['sent_bytes'])
+        gz_requests_num, gz_sent_logs_num, gz_sent_bytes = self.tests_utils.get_sending_file_results(
+            self.text_gz_file_handler, httpretty.latest_requests())
+
+        httpretty.latest_requests().clear()
+        regular_requests_num, regular_sent_logs_num, regular_sent_bytes = self.tests_utils.get_sending_file_results(
+            self.text_file_handler, httpretty.latest_requests())
+
+        self.assertEqual(regular_requests_num, gz_requests_num)
+        self.assertEqual(regular_sent_logs_num, gz_sent_logs_num)
+        self.assertEqual(regular_sent_bytes, gz_sent_bytes)
+
+    @httpretty.activate
+    def test_send_text_multiline_gz_data(self) -> None:
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=200)
+
+        gz_requests_num, gz_sent_logs_num, gz_sent_bytes = self.tests_utils.get_sending_file_results(
+            self.text_multiline_gz_file_handler, httpretty.latest_requests())
+
+        httpretty.latest_requests().clear()
+        regular_requests_num, regular_sent_logs_num, regular_sent_bytes = self.tests_utils.get_sending_file_results(
+            self.text_multiline_file_handler, httpretty.latest_requests())
+
+        self.assertEqual(regular_requests_num, gz_requests_num)
+        self.assertEqual(regular_sent_logs_num, gz_sent_logs_num)
+        self.assertEqual(regular_sent_bytes, gz_sent_bytes)
 
 
 if __name__ == '__main__':

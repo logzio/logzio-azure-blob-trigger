@@ -25,98 +25,95 @@ class TestAzureFunctionGeneral(unittest.TestCase):
     BAD_URI = 'https:/bad.uri:1234'
     BAD_CONNECTION_ADAPTER_URL = 'bad://connection.adapter:1234'
 
-    tests_utils: TestsUtils = None
     json_stream: BytesIO = None
-    json_size = None
+    json_size: int = None
 
     @classmethod
     def setUpClass(cls) -> None:
-        TestAzureFunctionGeneral.tests_utils = TestsUtils()
+        TestsUtils.set_up()
 
-        results = TestAzureFunctionGeneral.tests_utils.get_file_stream_and_size(
-            TestAzureFunctionGeneral.JSON_LOG_FILE)
-        TestAzureFunctionGeneral.json_stream = results['file_stream']
-        TestAzureFunctionGeneral.json_size = results['file_size']
+        cls.json_stream, cls.json_size = TestsUtils.get_file_stream_and_size(cls.JSON_LOG_FILE)
 
     def setUp(self) -> None:
         TestAzureFunctionGeneral.json_stream.seek(0)
 
+        self.tests_utils = TestsUtils()
+        self.file_handler = FileHandler(TestAzureFunctionGeneral.JSON_LOG_FILE, TestAzureFunctionGeneral.json_stream,
+                                        TestAzureFunctionGeneral.json_size)
+        self.file_parser = JsonParser(TestAzureFunctionGeneral.json_stream)
+
     @httpretty.activate
     def test_send_retry_status_500(self):
-        httpretty.register_uri(httpretty.POST, os.environ['LogzioURL'], status=500)
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=500)
 
-        FileHandler(TestAzureFunctionGeneral.JSON_LOG_FILE, TestAzureFunctionGeneral.json_stream,
-                    TestAzureFunctionGeneral.json_size).handle_file()
+        self.file_handler.handle_file()
         requests_num = len(httpretty.latest_requests()) / 2
 
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
 
     @httpretty.activate
     def test_send_retry_status_502(self):
-        httpretty.register_uri(httpretty.POST, os.environ['LogzioURL'], status=502)
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=502)
 
-        FileHandler(TestAzureFunctionGeneral.JSON_LOG_FILE, TestAzureFunctionGeneral.json_stream,
-                    TestAzureFunctionGeneral.json_size).handle_file()
+        self.file_handler.handle_file()
         requests_num = len(httpretty.latest_requests()) / 2
 
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
 
     @httpretty.activate
     def test_send_retry_status_503(self):
-        httpretty.register_uri(httpretty.POST, os.environ['LogzioURL'], status=503)
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=503)
 
-        FileHandler(TestAzureFunctionGeneral.JSON_LOG_FILE, TestAzureFunctionGeneral.json_stream,
-                    TestAzureFunctionGeneral.json_size).handle_file()
+        self.file_handler.handle_file()
         requests_num = len(httpretty.latest_requests()) / 2
 
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
 
     @httpretty.activate
     def test_send_retry_status_504(self):
-        httpretty.register_uri(httpretty.POST, os.environ['LogzioURL'], status=504)
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=504)
 
-        FileHandler(TestAzureFunctionGeneral.JSON_LOG_FILE, TestAzureFunctionGeneral.json_stream,
-                    TestAzureFunctionGeneral.json_size).handle_file()
+        self.file_handler.handle_file()
         requests_num = len(httpretty.latest_requests()) / 2
 
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
 
     @httpretty.activate
     def test_send_bad_format(self):
-        httpretty.register_uri(httpretty.POST, os.environ['LogzioURL'], status=400)
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=400)
 
-        file_parser = JsonParser(TestAzureFunctionGeneral.json_stream)
-        logzio_shipper = LogzioShipper(os.environ['LogzioURL'], os.environ['LogzioToken'])
+        logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
+                                       os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
-        TestAzureFunctionGeneral.tests_utils.add_first_log_to_logzio_shipper(file_parser, logzio_shipper)
+        self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.HTTPError, logzio_shipper.send_to_logzio)
 
     def test_sending_bad_logzio_url(self):
-        file_parser = JsonParser(TestAzureFunctionGeneral.json_stream)
-        logzio_shipper = LogzioShipper(TestAzureFunctionGeneral.BAD_LOGZIO_URL, os.environ['LogzioToken'])
+        logzio_shipper = LogzioShipper(TestAzureFunctionGeneral.BAD_LOGZIO_URL,
+                                       os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
-        TestAzureFunctionGeneral.tests_utils.add_first_log_to_logzio_shipper(file_parser, logzio_shipper)
+        self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.ConnectionError, logzio_shipper.send_to_logzio)
 
     def test_sending_bad_logzio_token(self):
-        file_parser = JsonParser(TestAzureFunctionGeneral.json_stream)
-        logzio_shipper = LogzioShipper(os.environ['LogzioURL'], TestAzureFunctionGeneral.BAD_LOGZIO_TOKEN)
+        logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
+                                       TestAzureFunctionGeneral.BAD_LOGZIO_TOKEN)
 
-        TestAzureFunctionGeneral.tests_utils.add_first_log_to_logzio_shipper(file_parser, logzio_shipper)
+        self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.HTTPError, logzio_shipper.send_to_logzio)
 
     def test_sending_bad_uri(self):
-        file_parser = JsonParser(TestAzureFunctionGeneral.json_stream)
-        logzio_shipper = LogzioShipper(TestAzureFunctionGeneral.BAD_URI, os.environ['LogzioToken'])
+        logzio_shipper = LogzioShipper(TestAzureFunctionGeneral.BAD_URI,
+                                       os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
-        TestAzureFunctionGeneral.tests_utils.add_first_log_to_logzio_shipper(file_parser, logzio_shipper)
+        self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.exceptions.InvalidURL, logzio_shipper.send_to_logzio)
 
     def test_sending_bad_connection_adapter(self):
-        file_parser = JsonParser(TestAzureFunctionGeneral.json_stream)
-        logzio_shipper = LogzioShipper(TestAzureFunctionGeneral.BAD_CONNECTION_ADAPTER_URL, os.environ['LogzioToken'])
+        logzio_shipper = LogzioShipper(TestAzureFunctionGeneral.BAD_CONNECTION_ADAPTER_URL,
+                                       os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
-        TestAzureFunctionGeneral.tests_utils.add_first_log_to_logzio_shipper(file_parser, logzio_shipper)
+        self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(InvalidSchema, logzio_shipper.send_to_logzio)
 
 

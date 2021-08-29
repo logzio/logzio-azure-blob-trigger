@@ -12,23 +12,29 @@ class TestsUtils:
 
     CONFIGURATION_FILE = 'tests/config.yaml'
 
-    def __init__(self):
+    @staticmethod
+    def set_up():
         with open(TestsUtils.CONFIGURATION_FILE, 'r') as yaml_file:
             config = yaml.load(yaml_file, Loader=yaml.FullLoader)
 
-            os.environ['LogzioURL'] = config['logzio']['url']
-            os.environ['LogzioToken'] = config['logzio']['token']
+            os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME] = config['logzio']['url']
+            os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME] = config['logzio']['token']
 
-    def get_file_stream_and_size(self, file_path: str) -> dict:
+    @staticmethod
+    def get_file_stream_and_size(file_path: str) -> tuple:
         with open(file_path, 'r') as json_file:
             file_data = str.encode(json_file.read())
 
         file_stream = BytesIO(file_data)
 
-        return {
-            "file_stream": file_stream,
-            "file_size": len(file_data)
-        }
+        return file_stream, len(file_data)
+
+    @staticmethod
+    def get_file_gz_stream(file_stream: BytesIO) -> BytesIO:
+        file_stream.seek(0)
+        compressed_data = gzip.compress(file_stream.read())
+
+        return BytesIO(compressed_data)
 
     def get_parsed_logs_num(self, file_parser: FileParser) -> int:
         parsed_logs_num = 0
@@ -46,7 +52,7 @@ class TestsUtils:
 
         return logs_num
 
-    def get_sending_file_results(self, file_handler: FileHandler, latest_requests: list) -> dict:
+    def get_sending_file_results(self, file_handler: FileHandler, latest_requests: list) -> tuple:
         requests_num = 0
         sent_logs_num = 0
         sent_bytes = 0
@@ -60,11 +66,7 @@ class TestsUtils:
                 sent_logs_num += 1
                 sent_bytes += len(log)
 
-        return {
-            "requests_num": requests_num / 2,
-            "sent_logs_num": sent_logs_num / 2,
-            "sent_bytes": sent_bytes / 2
-        }
+        return requests_num / 2, sent_logs_num / 2, sent_bytes / 2
 
     def get_parsed_logs_bytes(self, file_parser: FileParser):
         parsed_logs_bytes = 0

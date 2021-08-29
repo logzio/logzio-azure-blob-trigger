@@ -3,7 +3,7 @@ import os
 import csv
 import zlib
 
-from typing import Optional
+from typing import Optional, TextIO
 from io import BytesIO, IOBase
 from .file_parser import FileParser
 from .json_parser import JsonParser
@@ -62,14 +62,22 @@ class FileHandler:
 
         logger.info("Successfully finished processing file - {}".format(self.file_name))
 
-    def __get_seekable_file_stream(self, file_stream: IOBase):
+    def __get_seekable_file_stream(self, file_stream: IOBase) -> BytesIO:
         seekable_file_stream = BytesIO()
 
         if self.file_name.endswith(FileHandler.GZ_FILE_SUFFIX):
-            decompressor = zlib.decompressobj(32 + zlib.MAX_WBITS)
+            decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
 
             for line in file_stream:
-                seekable_file_stream.write(decompressor.decompress(line))
+                decompressed_lines = decompressor.decompress(line).decode("utf-8")
+                new_lines_num = decompressed_lines.count('\n')
+
+                for decompressed_line in decompressed_lines.splitlines():
+                    if new_lines_num > 0:
+                        seekable_file_stream.write(str.encode(decompressed_line + '\n'))
+                        new_lines_num -= 1
+                    else:
+                        seekable_file_stream.write(str.encode(decompressed_line))
         else:
             for line in file_stream:
                 seekable_file_stream.write(line)
@@ -79,7 +87,8 @@ class FileHandler:
         return seekable_file_stream
 
     def __get_file_parser(self) -> FileParser:
-        logs_sample = [self.file_stream.readline().decode("utf-8").rstrip(), self.file_stream.readline().decode("utf-8").rstrip()]
+        logs_sample = [self.file_stream.readline().decode("utf-8").rstrip(),
+                       self.file_stream.readline().decode("utf-8").rstrip()]
 
         self.file_stream.seek(0)
 
