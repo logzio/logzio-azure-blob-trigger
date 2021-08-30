@@ -49,7 +49,11 @@ class TestAzureFunctionGeneral(unittest.TestCase):
     def test_send_retry_status_500(self):
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=500)
 
-        self.file_handler.handle_file()
+        try:
+            self.file_handler.handle_file()
+        except self.file_handler.FailedToSendLogsError:
+            pass
+
         requests_num = len(httpretty.latest_requests()) / 2
 
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
@@ -58,7 +62,11 @@ class TestAzureFunctionGeneral(unittest.TestCase):
     def test_send_retry_status_502(self):
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=502)
 
-        self.file_handler.handle_file()
+        try:
+            self.file_handler.handle_file()
+        except self.file_handler.FailedToSendLogsError:
+            pass
+
         requests_num = len(httpretty.latest_requests()) / 2
 
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
@@ -67,7 +75,11 @@ class TestAzureFunctionGeneral(unittest.TestCase):
     def test_send_retry_status_503(self):
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=503)
 
-        self.file_handler.handle_file()
+        try:
+            self.file_handler.handle_file()
+        except self.file_handler.FailedToSendLogsError:
+            pass
+
         requests_num = len(httpretty.latest_requests()) / 2
 
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
@@ -76,7 +88,11 @@ class TestAzureFunctionGeneral(unittest.TestCase):
     def test_send_retry_status_504(self):
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=504)
 
-        self.file_handler.handle_file()
+        try:
+            self.file_handler.handle_file()
+        except self.file_handler.FailedToSendLogsError:
+            pass
+        
         requests_num = len(httpretty.latest_requests()) / 2
 
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
