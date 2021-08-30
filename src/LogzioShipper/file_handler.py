@@ -34,6 +34,9 @@ class FileHandler:
         self.logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
                                             os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
+    class FailedToSendLogsError(Exception):
+        pass
+
     def handle_file(self) -> None:
         if self.file_size == 0:
             logger.info("The file {} is empty.".format(self.file_name))
@@ -49,17 +52,17 @@ class FileHandler:
                 is_log_added_to_send = True
             except Exception:
                 logger.error("Failed to send logs to Logz.io for {}".format(self.file_name))
-                return
+                raise self.FailedToSendLogsError()
 
         if not is_log_added_to_send:
             logger.error("Failed to send logs to Logz.io for {}".format(self.file_name))
-            return
+            raise self.FailedToSendLogsError()
 
         try:    
             self.logzio_shipper.send_to_logzio()
         except Exception:
             logger.error("Failed to send logs to Logz.io for {}".format(self.file_name))
-            return
+            raise self.FailedToSendLogsError()
 
         logger.info("Successfully finished processing file - {}".format(self.file_name))
 
