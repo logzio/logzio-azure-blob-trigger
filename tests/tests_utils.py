@@ -63,7 +63,10 @@ class TestsUtils:
         sent_logs_num = 0
         sent_bytes = 0
 
-        file_handler.handle_file()
+        try:
+            file_handler.handle_file()
+        except file_handler.FailedToSendLogsError:
+            pass
 
         for request in latest_requests:
             requests_num += 1
