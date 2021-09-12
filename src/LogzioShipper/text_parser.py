@@ -16,20 +16,20 @@ class TextParser(FileParser):
 
     def __init__(self, file_stream: BytesIO, multiline_regex: str) -> None:
         super().__init__(file_stream)
-        self.multiline_regex = multiline_regex
+        self._multiline_regex = multiline_regex
 
     def parse_file(self) -> Generator:
-        if self.multiline_regex != TextParser.NO_REGEX_VALUE:
+        if self._multiline_regex != TextParser.NO_REGEX_VALUE:
             while True:
                 log = self.file_stream.readline().decode("utf-8")
 
                 if log == '':
                     break
 
-                multiline_log = self.__get_multiline_log(log)
+                multiline_log = self._get_multiline_log(log)
 
                 if multiline_log is None:
-                    logger.error("There is no match using the regex {}".format(self.multiline_regex))
+                    logger.error("There is no match using the regex {}".format(self._multiline_regex))
                     break
 
                 yield multiline_log
@@ -42,11 +42,11 @@ class TextParser(FileParser):
 
                 yield "{{\"message\": \"{}\"}}".format(log)
 
-    def __get_multiline_log(self, multiline_log: str) -> Optional[str]:
+    def _get_multiline_log(self, multiline_log: str) -> Optional[str]:
         while True:
-            if re.fullmatch(self.multiline_regex, multiline_log) is not None:
+            if re.fullmatch(self._multiline_regex, multiline_log) is not None:
                 return "{{\"message\": \"{}\"}}".format(multiline_log.replace('\n', ' '))
-            elif re.fullmatch(self.multiline_regex, multiline_log.rstrip()) is not None:
+            elif re.fullmatch(self._multiline_regex, multiline_log.rstrip()) is not None:
                 return "{{\"message\": \"{}\"}}".format(multiline_log.rstrip().replace('\n', ' '))
 
             line = self.file_stream.readline().decode("utf-8")

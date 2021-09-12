@@ -27,49 +27,53 @@ class FileHandler:
     MULTILINE_REGEX_ENVIRON_NAME = 'MultilineRegex'
 
     def __init__(self, file_name: str, file_stream: IOBase, file_size: int) -> None:
-        self.file_name = file_name
-        self.file_stream = self.__get_seekable_file_stream(file_stream)
-        self.file_size = file_size
-        self.file_parser = self.__get_file_parser()
-        self.logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
-                                            os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
+        self._file_name = file_name
+        self._file_stream = self._get_seekable_file_stream(file_stream)
+        self._file_size = file_size
+        self._file_parser = self._get_file_parser()
+        self._logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
+                                             os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
+
+    @property
+    def file_parser(self):
+        return self._file_parser
 
     class FailedToSendLogsError(Exception):
         pass
 
     def handle_file(self) -> None:
-        if self.file_size == 0:
-            logger.info("The file {} is empty.".format(self.file_name))
+        if self._file_size == 0:
+            logger.info("The file {} is empty.".format(self._file_name))
             return
 
-        logging.info("Starts processing file - {}".format(self.file_name))
+        logging.info("Starts processing file - {}".format(self._file_name))
 
         is_log_added_to_send = False
 
-        for log in self.file_parser.parse_file():
+        for log in self._file_parser.parse_file():
             try:
-                self.logzio_shipper.add_log_to_send(log)
+                self._logzio_shipper.add_log_to_send(log)
                 is_log_added_to_send = True
             except Exception:
-                logger.error("Failed to send logs to Logz.io for {}".format(self.file_name))
+                logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
                 raise self.FailedToSendLogsError()
 
         if not is_log_added_to_send:
-            logger.error("Failed to send logs to Logz.io for {}".format(self.file_name))
+            logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
             raise self.FailedToSendLogsError()
 
         try:    
-            self.logzio_shipper.send_to_logzio()
+            self._logzio_shipper.send_to_logzio()
         except Exception:
-            logger.error("Failed to send logs to Logz.io for {}".format(self.file_name))
+            logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
             raise self.FailedToSendLogsError()
 
-        logger.info("Successfully finished processing file - {}".format(self.file_name))
+        logger.info("Successfully finished processing file - {}".format(self._file_name))
 
-    def __get_seekable_file_stream(self, file_stream: IOBase) -> BytesIO:
+    def _get_seekable_file_stream(self, file_stream: IOBase) -> BytesIO:
         seekable_file_stream = BytesIO()
 
-        if self.file_name.endswith(FileHandler.GZ_FILE_SUFFIX):
+        if self._file_name.endswith(FileHandler.GZ_FILE_SUFFIX):
             decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
 
             for line in file_stream:
@@ -90,23 +94,23 @@ class FileHandler:
 
         return seekable_file_stream
 
-    def __get_file_parser(self) -> FileParser:
-        logs_sample = [self.file_stream.readline().decode("utf-8").rstrip(),
-                       self.file_stream.readline().decode("utf-8").rstrip()]
+    def _get_file_parser(self) -> FileParser:
+        logs_sample = [self._file_stream.readline().decode("utf-8").rstrip(),
+                       self._file_stream.readline().decode("utf-8").rstrip()]
 
-        self.file_stream.seek(0)
+        self._file_stream.seek(0)
 
         if logs_sample[0].startswith(FileHandler.JSON_STARTING_CHAR):
-            return JsonParser(self.file_stream)
+            return JsonParser(self._file_stream)
 
-        delimiter = self.__is_file_csv(logs_sample)
+        delimiter = self._is_file_csv(logs_sample)
 
         if delimiter is not None:
-            return CsvParser(self.file_stream, delimiter)
+            return CsvParser(self._file_stream, delimiter)
 
-        return TextParser(self.file_stream, os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME])
+        return TextParser(self._file_stream, os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME])
 
-    def __is_file_csv(self, logs_sample: list) -> Optional[str]:
+    def _is_file_csv(self, logs_sample: list) -> Optional[str]:
         sample = '\n'.join(logs_sample)
 
         try:

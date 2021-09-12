@@ -16,7 +16,7 @@ class CsvParser(FileParser):
     
     def __init__(self, file_stream: BytesIO, delimiter: str) -> None:
         super().__init__(file_stream)
-        self.delimiter = delimiter
+        self._delimiter = delimiter
 
     def parse_file(self) -> Generator:
         logs = [self.file_stream.readline().decode("utf-8").rstrip(), '']
@@ -27,10 +27,7 @@ class CsvParser(FileParser):
             if logs[1] == '':
                 break
 
-            try:
-                reader = csv.DictReader(io.StringIO('\n'.join(logs)), delimiter=self.delimiter)
-                log = next(reader)
+            reader = csv.DictReader(io.StringIO('\n'.join(logs)), delimiter=self._delimiter)
+            log = next(reader)
 
-                yield json.dumps(log)
-            except TypeError:
-                logger.error("The following csv line could not be serialized to json: {}".format(log))
+            yield json.dumps(log)
