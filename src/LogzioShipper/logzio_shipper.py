@@ -35,9 +35,9 @@ class LogzioShipper:
         if not self._is_log_valid_to_be_sent(log, log_size):
             return
 
-        if not self.bulk_size + log_size > LogzioShipper.MAX_BULK_SIZE_BYTES:
+        if not self._bulk_size + log_size > LogzioShipper.MAX_BULK_SIZE_BYTES:
             self._logs.append(log)
-            self.bulk_size += log_size
+            self._bulk_size += log_size
             return
 
         try:
@@ -58,11 +58,11 @@ class LogzioShipper:
                        "Logzio-Shipper": "logzio-azure-blob-trigger/v{0}/0/0.".format(VERSION)}
             compressed_data = gzip.compress(str.encode('\n'.join(self._logs)))
             response = self._get_request_retry_session().post(url=self._logzio_url,
-                                                               data=compressed_data,
-                                                               headers=headers,
-                                                               timeout=LogzioShipper.CONNECTION_TIMEOUT_SECONDS)
+                                                              data=compressed_data,
+                                                              headers=headers,
+                                                              timeout=LogzioShipper.CONNECTION_TIMEOUT_SECONDS)
             response.raise_for_status()
-            logger.info("Successfully sent bulk of {} bytes to Logz.io.".format(self.bulk_size))
+            logger.info("Successfully sent bulk of {} bytes to Logz.io.".format(self._bulk_size))
             self._reset_logs()
         except requests.ConnectionError as e:
             logger.error(
@@ -135,4 +135,4 @@ class LogzioShipper:
 
     def _reset_logs(self) -> None:
         self._logs.clear()
-        self.bulk_size = 0
+        self._bulk_size = 0
