@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 class FileHandler:
 
     JSON_STARTING_CHAR = '{'
-    GZ_FILE_SUFFIX = '.gz'
+    GZ_MAGIC_NUMBER = b'\x1f\x8b'
     CSV_DELIMITERS: Optional[str] = [',', ';', '|']
 
     LOGZIO_URL_ENVIRON_NAME = 'LogzioURL'
@@ -73,26 +73,44 @@ class FileHandler:
     def _get_seekable_file_stream(self, file_stream: IOBase) -> BytesIO:
         seekable_file_stream = BytesIO()
 
-        if self._file_name.endswith(FileHandler.GZ_FILE_SUFFIX):
-            decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        for line in file_stream:
+            seekable_file_stream.write(line)
 
-            for line in file_stream:
-                decompressed_lines = decompressor.decompress(line).decode("utf-8")
-                new_lines_num = decompressed_lines.count('\n')
-
-                for decompressed_line in decompressed_lines.splitlines():
-                    if new_lines_num > 0:
-                        seekable_file_stream.write(str.encode(decompressed_line + '\n'))
-                        new_lines_num -= 1
-                    else:
-                        seekable_file_stream.write(str.encode(decompressed_line))
-        else:
-            for line in file_stream:
-                seekable_file_stream.write(line)
-        
         seekable_file_stream.seek(0)
 
-        return seekable_file_stream
+        if not self._is_gz_file(seekable_file_stream):
+            return seekable_file_stream
+
+        return self._get_seekable_decompressed_gz_file_stream(seekable_file_stream)
+
+    def _is_gz_file(self, seekable_file_stream: BytesIO) -> bool:
+        is_gz_file = False
+
+        if seekable_file_stream.read(2) == FileHandler.GZ_MAGIC_NUMBER:
+            is_gz_file = True
+
+        seekable_file_stream.seek(0)
+
+        return is_gz_file
+
+    def _get_seekable_decompressed_gz_file_stream(self, seekable_file_stream: BytesIO) -> BytesIO:
+        seekable_decompressed_gz_file_stream = BytesIO()
+        decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+
+        for line in seekable_file_stream:
+            decompressed_lines = decompressor.decompress(line).decode("utf-8")
+            new_lines_num = decompressed_lines.count('\n')
+
+            for decompressed_line in decompressed_lines.splitlines():
+                if new_lines_num > 0:
+                    seekable_decompressed_gz_file_stream.write(str.encode(decompressed_line + '\n'))
+                    new_lines_num -= 1
+                else:
+                    seekable_decompressed_gz_file_stream.write(str.encode(decompressed_line))
+
+        seekable_decompressed_gz_file_stream.seek(0)
+
+        return seekable_decompressed_gz_file_stream
 
     def _get_file_parser(self) -> FileParser:
         logs_sample = [self._file_stream.readline().decode("utf-8").rstrip(),
