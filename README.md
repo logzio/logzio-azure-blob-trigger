@@ -45,7 +45,7 @@ You'll be taken to Azure Custom deployment page. Fill in all the parameters and 
 
 | Parameter | Description |
 | --- | --- |
-| Storage Account Name | The storage account name. |
+| Storage Account Name | The storage account (general purpose v2) name. |
 | Storage Account Resource Name | The resource name that contains the storage account. (Needed only in Logz.io Function Auto-Deployment) | 
 | Container Name | The name of the container inside the storage account |
 | Logs Path | The path from where blob files will trigger the Logz.io function (including sub directories in that path). Leave empty if you want that every blob file in the container will trigger the Logz.io function. |
