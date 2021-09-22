@@ -1,0 +1,3 @@
+logzio:
+  url: LOGZIO_URL
+  token: LOGZIO_TOKEN
