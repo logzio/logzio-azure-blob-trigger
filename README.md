@@ -9,10 +9,10 @@ There are 2 options for auto-deployment. Choose the one that is suitable for you
 
 ### Full Auto-Deployment
 
-If you don't have storage account with container with logs, or you want to create everything from scratch, this auto-deployment is for you. 
+If you don't have storage account (general purpose v2) with container with logs, or you want to create everything from scratch, this auto-deployment is for you. 
 Will auto-deploy the following resources:
 
-- Storage Account + Container
+- Storage Account (general purpose v2) + Container
 - App Service Plan - Consumption Plan
 - Application Insights
 - Logz.io Function App + Logz.io Blob Trigger Function
@@ -24,7 +24,7 @@ Press the button to start:
 
 ### Logz.io Function Auto-Deployment
 
-If you already have storage account with container with logs, this auto-deployment is for you.
+If you already have storage account (general purpose v2) with container with logs, this auto-deployment is for you.
 Will auto-deploy the following resources:
 
 - App Service Plan - Consumption Plan
