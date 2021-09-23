@@ -19,8 +19,8 @@ class TestsUtils:
 
             os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME] = config['logzio']['url']
             os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME] = config['logzio']['token']
-            os.environ[FileHandler.FILTER_DATE_ENVIRON_NAME] = ''
-            os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = ''
+            os.environ[FileHandler.FILTER_DATE_ENVIRON_NAME] = FileHandler.NO_FILTER_DATE_VALUE
+            os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = FileHandler.NO_FILTER_DATE_JSON_PATH_VALUE
 
     @staticmethod
     def get_file_stream_and_size(file_path: str) -> tuple[BytesIO, int]:
