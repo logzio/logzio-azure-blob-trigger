@@ -32,16 +32,15 @@ class LogzioShipper:
         self._custom_fields: list[CustomField] = []
 
     def add_log_to_send(self, log: str) -> None:
-        self._add_custom_fields_to_log(log)
+        enriched_log = self._add_custom_fields_to_log(log)
+        enriched_log_size = len(enriched_log)
 
-        log_size = len(log)
-
-        if not self._is_log_valid_to_be_sent(log, log_size):
+        if not self._is_log_valid_to_be_sent(enriched_log, enriched_log_size):
             return
 
-        if not self._bulk_size + log_size > LogzioShipper.MAX_BULK_SIZE_BYTES:
-            self._logs.append(log)
-            self._bulk_size += log_size
+        if not self._bulk_size + enriched_log_size > LogzioShipper.MAX_BULK_SIZE_BYTES:
+            self._logs.append(enriched_log)
+            self._bulk_size += enriched_log_size
             return
 
         try:
@@ -49,8 +48,8 @@ class LogzioShipper:
         except Exception:
             raise
 
-        self._logs.append(log)
-        self._bulk_size = log_size
+        self._logs.append(enriched_log)
+        self._bulk_size = enriched_log_size
 
     def send_to_logzio(self) -> None:
         if self._logs is None:
@@ -104,7 +103,7 @@ class LogzioShipper:
             raise
 
     def add_custom_field_to_list(self, custom_field: CustomField) -> None:
-        self.custom_fields.append(custom_field)
+        self._custom_fields.append(custom_field)
 
     def _is_log_valid_to_be_sent(self, log: str, log_size: int) -> bool:
         if log_size > LogzioShipper.MAX_LOG_SIZE_BYTES:
@@ -119,7 +118,7 @@ class LogzioShipper:
     def _add_custom_fields_to_log(self, log: str) -> str:
         json_log = json.loads(log)
 
-        for field in self.custom_fields:
+        for field in self._custom_fields:
             json_log[field.key] = field.value
 
         return json.dumps(json_log)
