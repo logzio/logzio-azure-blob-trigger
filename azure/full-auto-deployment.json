@@ -61,7 +61,7 @@
       "defaultValue": "",
       "type": "string",
       "metadata": {
-        "description": "Every log with date greater or equals to this date will be shipped to Logz.io (for it to take effect FilterDateJson must not be empty). Leave empty if you want all logs to be shipped to Logz.io."
+        "description": "Every log with date greater or equals to this date will be shipped to Logz.io (for it to take effect FilterDateJson must not be empty). The date must be in the same format as date in the logs. Leave empty if you want all logs to be shipped to Logz.io."
       }
     },
     "FilterDateJsonPath": {
