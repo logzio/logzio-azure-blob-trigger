@@ -68,7 +68,7 @@
       "defaultValue": "",
       "type": "string",
       "metadata": {
-        "description": "The json path of the date inside each log (for example: metadata.datetime). Leave empty if you are not using FilterDate."
+        "description": "The json path of the date inside each log (for example: metadata.datetime). If this value cannot be found inside a log, the log will be shipped to Logz.io. Leave empty if you are not using FilterDate."
       }
     }
   },
