@@ -8,7 +8,7 @@
       "maxLength": 24,
       "type": "string",
       "metadata": {
-        "description": "The storage account name. Must be between 3 and 24 characters in length and contains numbers and lower-case letters only."
+        "description": "The storage account (general purpose v2) name. Must be between 3 and 24 characters in length and contains numbers and lower-case letters only."
       }
     },
     "ContainerName": {
@@ -55,6 +55,20 @@
       "type": "string",
       "metadata": {
         "description": "The regex that matches the multiline logs in text blob files. Leave empty if you do not use multiline logs in your text blob files."
+      }
+    },
+    "FilterDate": {
+      "defaultValue": "",
+      "type": "string",
+      "metadata": {
+        "description": "Every log with date greater or equals to this date will be shipped to Logz.io (for it to take effect FilterDateJson must not be empty). Leave empty if you want all logs to be shipped to Logz.io."
+      }
+    },
+    "FilterDateJsonPath": {
+      "defaultValue": "",
+      "type": "string",
+      "metadata": {
+        "description": "The json path of the date inside each log (for example: metadata.datetime). Leave empty if you are not using FilterDate."
       }
     }
   },
@@ -202,6 +216,14 @@
             {
               "name": "MultilineRegex",
               "value": "[if(equals(parameters('MultilineRegex'), ''), 'NO_REGEX', parameter('MultilineRegex'))]"
+            },
+            {
+              "name": "FilterDate",
+              "value": "[if(equals(parameters('FilterDate'), ''), 'NO_FILTER_DATE', parameter('FilterDate'))]"
+            },
+            {
+              "name": "FilterDateJsonPath",
+              "value": "[if(equals(parameters('FilterDateJsonPath'), ''), 'NO_FILTER_DATE_JSON_PATH', parameter('FilterDateJsonPath'))]"
             },
             {
               "name": "StorageConnectionString",

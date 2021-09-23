@@ -2,9 +2,12 @@ import logging
 import os
 import csv
 import zlib
+import json
 
 from typing import Optional
 from io import BytesIO, IOBase
+from jsonpath_ng import parse
+from dateutil import parser
 from .file_parser import FileParser
 from .json_parser import JsonParser
 from .csv_parser import CsvParser
@@ -25,17 +28,24 @@ class FileHandler:
     LOGZIO_URL_ENVIRON_NAME = 'LogzioURL'
     LOGZIO_TOKEN_ENVIRON_NAME = 'LogzioToken'
     MULTILINE_REGEX_ENVIRON_NAME = 'MultilineRegex'
+    FILTER_DATE_ENVIRON_NAME = 'FilterDate'
+    FILTER_DATE_JSON_PATH_ENVIRON_NAME = 'FilterDateJsonPath'
+
+    NO_FILTER_DATE_VALUE = 'NO_FILTER_DATE'
+    NO_FILTER_DATE_JSON_PATH_VALUE = 'NO_FILTER_DATE_JSON_PATH'
 
     def __init__(self, file_name: str, file_stream: IOBase, file_size: int) -> None:
         self._file_name = file_name
         self._file_stream = self._get_seekable_file_stream(file_stream)
         self._file_size = file_size
+        self._filter_date = self._get_filter_date()
+        self._filter_date_json_path = self._get_filter_date_json_path()
         self._file_parser = self._get_file_parser()
         self._logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
                                              os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
     @property
-    def file_parser(self):
+    def file_parser(self) -> FileParser:
         return self._file_parser
 
     class FailedToSendLogsError(Exception):
@@ -48,24 +58,9 @@ class FileHandler:
 
         logging.info("Starts processing file - {}".format(self._file_name))
 
-        is_log_added_to_send = False
-
-        for log in self._file_parser.parse_file():
-            try:
-                self._logzio_shipper.add_log_to_send(log)
-                is_log_added_to_send = True
-            except Exception:
-                logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
-                raise self.FailedToSendLogsError()
-
-        if not is_log_added_to_send:
-            logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
-            raise self.FailedToSendLogsError()
-
-        try:    
-            self._logzio_shipper.send_to_logzio()
+        try:
+            self._send_logs_to_logzio()
         except Exception:
-            logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
             raise self.FailedToSendLogsError()
 
         logger.info("Successfully finished processing file - {}".format(self._file_name))
@@ -112,6 +107,22 @@ class FileHandler:
 
         return seekable_decompressed_gz_file_stream
 
+    def _get_filter_date(self) -> Optional[str]:
+        filter_date = os.environ[FileHandler.FILTER_DATE_ENVIRON_NAME]
+
+        if filter_date == FileHandler.NO_FILTER_DATE_VALUE:
+            return None
+
+        return filter_date
+
+    def _get_filter_date_json_path(self) -> Optional[str]:
+        filter_date_json_path = os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME]
+
+        if filter_date_json_path == FileHandler.NO_FILTER_DATE_JSON_PATH_VALUE:
+            return None
+
+        return filter_date_json_path
+
     def _get_file_parser(self) -> FileParser:
         logs_sample = [self._file_stream.readline().decode("utf-8").rstrip(),
                        self._file_stream.readline().decode("utf-8").rstrip()]
@@ -137,3 +148,43 @@ class FileHandler:
             return str(dialect.delimiter)
         except csv.Error:
             return None
+
+    def _send_logs_to_logzio(self) -> None:
+        is_log_added_to_send = False
+
+        for log in self._file_parser.parse_file():
+            if not self._is_log_date_greater_or_equal_filter_date(log):
+                continue
+
+            try:
+                self._logzio_shipper.add_log_to_send(log)
+                is_log_added_to_send = True
+            except Exception:
+                logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
+                raise self.FailedToSendLogsError()
+
+        if not is_log_added_to_send:
+            logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
+            raise self.FailedToSendLogsError()
+
+        try:
+            self._logzio_shipper.send_to_logzio()
+        except Exception:
+            logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
+            raise self.FailedToSendLogsError()
+
+    def _is_log_date_greater_or_equal_filter_date(self, log: str) -> bool:
+        if self._filter_date is not None and self._filter_date_json_path is not None:
+            json_log = json.loads(log)
+            match = parse(self._filter_date_json_path).find(json_log)
+
+            if not match:
+                return True
+
+            log_date = parser.parse(match[0].value)
+            filter_date = parser.parse(self._filter_date)
+
+            if log_date < filter_date:
+                return False
+
+        return True
