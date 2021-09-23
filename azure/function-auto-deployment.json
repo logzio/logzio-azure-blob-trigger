@@ -186,15 +186,15 @@
             },
             {
               "name": "MultilineRegex",
-              "value": "[if(equals(parameters('MultilineRegex'), ''), 'NO_REGEX', parameter('MultilineRegex'))]"
+              "value": "[if(equals(parameters('MultilineRegex'), ''), 'NO_REGEX', parameters('MultilineRegex'))]"
             },
             {
               "name": "FilterDate",
-              "value": "[if(equals(parameters('FilterDate'), ''), 'NO_FILTER_DATE', parameter('FilterDate'))]"
+              "value": "[if(equals(parameters('FilterDate'), ''), 'NO_FILTER_DATE', parameters('FilterDate'))]"
             },
             {
               "name": "FilterDateJsonPath",
-              "value": "[if(equals(parameters('FilterDateJsonPath'), ''), 'NO_FILTER_DATE_JSON_PATH', parameter('FilterDateJsonPath'))]"
+              "value": "[if(equals(parameters('FilterDateJsonPath'), ''), 'NO_FILTER_DATE_JSON_PATH', parameters('FilterDateJsonPath'))]"
             },
             {
               "name": "StorageConnectionString",
