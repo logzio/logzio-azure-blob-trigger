@@ -13,6 +13,7 @@ from .json_parser import JsonParser
 from .csv_parser import CsvParser
 from .text_parser import TextParser
 from .logzio_shipper import LogzioShipper
+from .custom_field import CustomField
 
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,8 @@ class FileHandler:
         self._file_parser = self._get_file_parser()
         self._logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
                                              os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
+
+        self._add_custom_fields_to_logzio_shipper()
 
     @property
     def file_parser(self) -> FileParser:
@@ -138,6 +141,9 @@ class FileHandler:
             return CsvParser(self._file_stream, delimiter)
 
         return TextParser(self._file_stream, os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME])
+
+    def _add_custom_fields_to_logzio_shipper(self) -> None:
+        self._logzio_shipper.add_custom_field_to_list(CustomField(field_key='file', field_value=self._file_name))
 
     def _is_file_csv(self, logs_sample: list) -> Optional[str]:
         sample = '\n'.join(logs_sample)

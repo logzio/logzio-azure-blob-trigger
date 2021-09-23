@@ -1,17 +1,18 @@
 import logging
 import requests
 import gzip
+import json
 
-from typing import Any
 from requests.adapters import HTTPAdapter, RetryError
 from requests.sessions import InvalidSchema, Session
 from urllib3.util.retry import Retry
+from .custom_field import CustomField
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 
 class LogzioShipper:
@@ -28,8 +29,11 @@ class LogzioShipper:
         self._logzio_url = "{0}/?token={1}&type=azure_blob_trigger".format(logzio_url, token)
         self._logs = []
         self._bulk_size = 0
+        self._custom_fields: list[CustomField] = []
 
-    def add_log_to_send(self, log: Any) -> None:
+    def add_log_to_send(self, log: str) -> None:
+        self._add_custom_fields_to_log(log)
+
         log_size = len(log)
 
         if not self._is_log_valid_to_be_sent(log, log_size):
@@ -99,6 +103,9 @@ class LogzioShipper:
             logger.error("Something went wrong. response: {}".format(e))
             raise
 
+    def add_custom_field_to_list(self, custom_field: CustomField) -> None:
+        self.custom_fields.append(custom_field)
+
     def _is_log_valid_to_be_sent(self, log: str, log_size: int) -> bool:
         if log_size > LogzioShipper.MAX_LOG_SIZE_BYTES:
             logger.error(
@@ -108,6 +115,14 @@ class LogzioShipper:
             return False
 
         return True
+
+    def _add_custom_fields_to_log(self, log: str) -> str:
+        json_log = json.loads(log)
+
+        for field in self.custom_fields:
+            json_log[field.key] = field.value
+
+        return json.dumps(json_log)
 
     def _get_request_retry_session(
             self,
