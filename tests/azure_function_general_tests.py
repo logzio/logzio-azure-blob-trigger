@@ -49,6 +49,7 @@ class TestAzureFunctionGeneral(unittest.TestCase):
         self.file_handler = FileHandler(TestAzureFunctionGeneral.JSON_DATETIME_LOG_FILE,
                                         TestAzureFunctionGeneral.json_datetime_stream,
                                         TestAzureFunctionGeneral.json_datetime_size)
+        self.file_custom_fields_bytes = self.tests_utils.get_file_custom_fields_bytes(self.file_handler)
         self.file_parser = JsonParser(TestAzureFunctionGeneral.json_datetime_stream)
 
         TestAzureFunctionGeneral.json_datetime_stream.seek(0)
@@ -159,10 +160,12 @@ class TestAzureFunctionGeneral(unittest.TestCase):
 
         TestAzureFunctionGeneral.json_datetime_stream.seek(0)
         stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionGeneral.json_datetime_stream)
+        stream_size = TestAzureFunctionGeneral.json_datetime_size - stream_logs_num + 1
+        stream_size += stream_logs_num * self.file_custom_fields_bytes
 
         self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
         self.assertEqual(stream_logs_num / 2, sent_logs_num)
-        self.assertNotEqual(TestAzureFunctionGeneral.json_datetime_size - stream_logs_num + 1, sent_bytes)
+        self.assertNotEqual(stream_size, sent_bytes)
 
     @httpretty.activate
     def test_bad_filter_date(self) -> None:
@@ -173,10 +176,12 @@ class TestAzureFunctionGeneral(unittest.TestCase):
 
         TestAzureFunctionGeneral.json_datetime_stream.seek(0)
         stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionGeneral.json_datetime_stream)
+        stream_size = TestAzureFunctionGeneral.json_datetime_size - stream_logs_num + 1
+        stream_size += stream_logs_num * self.file_custom_fields_bytes
 
         self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
         self.assertEqual(stream_logs_num, sent_logs_num)
-        self.assertEqual(TestAzureFunctionGeneral.json_datetime_size - stream_logs_num + 1, sent_bytes)
+        self.assertEqual(stream_size, sent_bytes)
 
 
 if __name__ == '__main__':

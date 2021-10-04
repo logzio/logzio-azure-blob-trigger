@@ -1,7 +1,9 @@
 import gzip
 import yaml
 import os
+import json
 
+from typing import Tuple, List
 from io import BytesIO
 from src.LogzioShipper.file_parser import FileParser
 from src.LogzioShipper.file_handler import FileHandler
@@ -23,7 +25,7 @@ class TestsUtils:
             os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = FileHandler.NO_FILTER_DATE_JSON_PATH_VALUE
 
     @staticmethod
-    def get_file_stream_and_size(file_path: str) -> tuple[BytesIO, int]:
+    def get_file_stream_and_size(file_path: str) -> Tuple[BytesIO, int]:
         with open(file_path, 'r') as json_file:
             file_data = str.encode(json_file.read())
 
@@ -55,12 +57,12 @@ class TestsUtils:
     def get_file_stream_logs_num(self, file_stream: BytesIO) -> int:
         logs_num = 0
 
-        for a in file_stream:
+        for _ in file_stream:
             logs_num += 1
 
         return logs_num
 
-    def get_sending_file_results(self, file_handler: FileHandler, latest_requests: list) -> tuple[int, int, int]:
+    def get_sending_file_results(self, file_handler: FileHandler, latest_requests: list) -> Tuple[int, int, int]:
         requests_num = 0
         sent_logs_num = 0
         sent_bytes = 0
@@ -84,6 +86,14 @@ class TestsUtils:
             logzio_shipper.add_log_to_send(log)
             break
 
-    def reset_file_streams_position(self, file_streams: list[BytesIO]) -> None:
+    def reset_file_streams_position(self, file_streams: List[BytesIO]) -> None:
         for file_stream in file_streams:
             file_stream.seek(0)
+
+    def get_file_custom_fields_bytes(self, file_handler: FileHandler) -> int:
+        custom_fields: dict = {}
+
+        for custom_field in file_handler.get_custom_fields():
+            custom_fields[custom_field.key] = custom_field.value
+
+        return len(json.dumps(custom_fields))

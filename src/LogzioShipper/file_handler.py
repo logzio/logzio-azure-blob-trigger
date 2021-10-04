@@ -4,7 +4,7 @@ import csv
 import zlib
 import json
 
-from typing import Optional
+from typing import Optional, Generator
 from io import BytesIO, IOBase
 from jsonpath_ng import parse
 from dateutil import parser
@@ -44,12 +44,17 @@ class FileHandler:
         self._file_parser = self._get_file_parser()
         self._logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
                                              os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
+        self._custom_fields = [CustomField(field_key='file', field_value=self._file_name)]
 
         self._add_custom_fields_to_logzio_shipper()
 
     @property
     def file_parser(self) -> FileParser:
         return self._file_parser
+
+    def get_custom_fields(self) -> Generator:
+        for custom_field in self._custom_fields:
+            yield custom_field
 
     class FailedToSendLogsError(Exception):
         pass
@@ -143,7 +148,8 @@ class FileHandler:
         return TextParser(self._file_stream, os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME])
 
     def _add_custom_fields_to_logzio_shipper(self) -> None:
-        self._logzio_shipper.add_custom_field_to_list(CustomField(field_key='file', field_value=self._file_name))
+        for custom_field in self._custom_fields:
+            self._logzio_shipper.add_custom_field_to_list(custom_field)
 
     def _is_file_csv(self, logs_sample: list) -> Optional[str]:
         sample = '\n'.join(logs_sample)
