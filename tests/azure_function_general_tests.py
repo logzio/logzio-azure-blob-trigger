@@ -3,6 +3,7 @@ import logging
 import requests
 import os
 import httpretty
+import math
 
 from logging.config import fileConfig
 from io import BytesIO
@@ -19,34 +20,48 @@ logger = logging.getLogger(__name__)
 
 class TestAzureFunctionGeneral(unittest.TestCase):
 
-    JSON_LOG_FILE = 'tests/logs/json'
+    JSON_DATETIME_LOG_FILE = 'tests/logs/json_datetime'
     BAD_LOGZIO_URL = 'https://bad.endpoint:1234'
     BAD_LOGZIO_TOKEN = '123456789'
     BAD_URI = 'https:/bad.uri:1234'
     BAD_CONNECTION_ADAPTER_URL = 'bad://connection.adapter:1234'
+    FILTER_DATE = '2021-09-20T10:10:10'
+    FILTER_DATE_JSON_PATH = 'datetime'
+    BAD_FILTER_DATE_JSON_PATH = 'date'
 
-    json_stream: BytesIO = None
-    json_size = 0
+    json_datetime_stream: BytesIO = None
+    json_datetime_size = 0
 
     @classmethod
     def setUpClass(cls) -> None:
         TestsUtils.set_up()
 
-        cls.json_stream, cls.json_size = TestsUtils.get_file_stream_and_size(cls.JSON_LOG_FILE)
+        os.environ[FileHandler.FILTER_DATE_ENVIRON_NAME] = cls.FILTER_DATE
+        cls.json_datetime_stream, cls.json_datetime_size = TestsUtils.get_file_stream_and_size(
+            cls.JSON_DATETIME_LOG_FILE)
 
     def setUp(self) -> None:
         self.tests_utils = TestsUtils()
 
-        self.tests_utils.reset_file_streams_position([TestAzureFunctionGeneral.json_stream])
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionGeneral.json_datetime_stream])
 
-        self.file_handler = FileHandler(TestAzureFunctionGeneral.JSON_LOG_FILE, TestAzureFunctionGeneral.json_stream,
-                                        TestAzureFunctionGeneral.json_size)
-        self.file_parser = JsonParser(TestAzureFunctionGeneral.json_stream)
+        os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = TestAzureFunctionGeneral.FILTER_DATE_JSON_PATH
+        self.file_handler = FileHandler(TestAzureFunctionGeneral.JSON_DATETIME_LOG_FILE,
+                                        TestAzureFunctionGeneral.json_datetime_stream,
+                                        TestAzureFunctionGeneral.json_datetime_size)
+        self.file_parser = JsonParser(TestAzureFunctionGeneral.json_datetime_stream)
 
-        self.tests_utils.reset_file_streams_position([TestAzureFunctionGeneral.json_stream])
+        TestAzureFunctionGeneral.json_datetime_stream.seek(0)
+
+        os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = TestAzureFunctionGeneral.BAD_FILTER_DATE_JSON_PATH
+        self.file_bad_filter_handler = FileHandler(TestAzureFunctionGeneral.JSON_DATETIME_LOG_FILE,
+                                                   TestAzureFunctionGeneral.json_datetime_stream,
+                                                   TestAzureFunctionGeneral.json_datetime_size)
+
+        self.tests_utils.reset_file_streams_position([TestAzureFunctionGeneral.json_datetime_stream])
 
     @httpretty.activate
-    def test_send_retry_status_500(self):
+    def test_send_retry_status_500(self) -> None:
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=500)
 
         try:
@@ -59,7 +74,7 @@ class TestAzureFunctionGeneral(unittest.TestCase):
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
 
     @httpretty.activate
-    def test_send_retry_status_502(self):
+    def test_send_retry_status_502(self) -> None:
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=502)
 
         try:
@@ -72,7 +87,7 @@ class TestAzureFunctionGeneral(unittest.TestCase):
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
 
     @httpretty.activate
-    def test_send_retry_status_503(self):
+    def test_send_retry_status_503(self) -> None:
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=503)
 
         try:
@@ -85,7 +100,7 @@ class TestAzureFunctionGeneral(unittest.TestCase):
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
 
     @httpretty.activate
-    def test_send_retry_status_504(self):
+    def test_send_retry_status_504(self) -> None:
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=504)
 
         try:
@@ -98,7 +113,7 @@ class TestAzureFunctionGeneral(unittest.TestCase):
         self.assertEqual(LogzioShipper.MAX_RETRIES + 1, requests_num)
 
     @httpretty.activate
-    def test_send_bad_format(self):
+    def test_send_bad_format(self) -> None:
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=400)
 
         logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
@@ -107,33 +122,61 @@ class TestAzureFunctionGeneral(unittest.TestCase):
         self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.HTTPError, logzio_shipper.send_to_logzio)
 
-    def test_sending_bad_logzio_url(self):
+    def test_sending_bad_logzio_url(self) -> None:
         logzio_shipper = LogzioShipper(TestAzureFunctionGeneral.BAD_LOGZIO_URL,
                                        os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
         self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.ConnectionError, logzio_shipper.send_to_logzio)
 
-    def test_sending_bad_logzio_token(self):
+    def test_sending_bad_logzio_token(self) -> None:
         logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
                                        TestAzureFunctionGeneral.BAD_LOGZIO_TOKEN)
 
         self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.HTTPError, logzio_shipper.send_to_logzio)
 
-    def test_sending_bad_uri(self):
+    def test_sending_bad_uri(self) -> None:
         logzio_shipper = LogzioShipper(TestAzureFunctionGeneral.BAD_URI,
                                        os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
         self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.exceptions.InvalidURL, logzio_shipper.send_to_logzio)
 
-    def test_sending_bad_connection_adapter(self):
+    def test_sending_bad_connection_adapter(self) -> None:
         logzio_shipper = LogzioShipper(TestAzureFunctionGeneral.BAD_CONNECTION_ADAPTER_URL,
                                        os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
         self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(InvalidSchema, logzio_shipper.send_to_logzio)
+
+    @httpretty.activate
+    def test_filter_date(self) -> None:
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=200)
+
+        requests_num, sent_logs_num, sent_bytes = self.tests_utils.get_sending_file_results(self.file_handler,
+                                                                                            httpretty.latest_requests())
+
+        TestAzureFunctionGeneral.json_datetime_stream.seek(0)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionGeneral.json_datetime_stream)
+
+        self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
+        self.assertEqual(stream_logs_num / 2, sent_logs_num)
+        self.assertNotEqual(TestAzureFunctionGeneral.json_datetime_size - stream_logs_num + 1, sent_bytes)
+
+    @httpretty.activate
+    def test_bad_filter_date(self) -> None:
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=200)
+
+        requests_num, sent_logs_num, sent_bytes = self.tests_utils.get_sending_file_results(
+            self.file_bad_filter_handler, httpretty.latest_requests())
+
+        TestAzureFunctionGeneral.json_datetime_stream.seek(0)
+        stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionGeneral.json_datetime_stream)
+
+        self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
+        self.assertEqual(stream_logs_num, sent_logs_num)
+        self.assertEqual(TestAzureFunctionGeneral.json_datetime_size - stream_logs_num + 1, sent_bytes)
 
 
 if __name__ == '__main__':

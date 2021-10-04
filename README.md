@@ -35,7 +35,7 @@ Will auto-deploy the following resources:
 [![Deploy to Azure](https://azuredeploy.net/deploybutton.png)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Flogzio%2Flogzio-azure-blob-trigger%2Fmain%2Fazure%2Ffunction-auto-deployment.json)
 
 * When deploying the Logz.io function, logs that were in the container before the deployment will be shipped to Logz.io.
-If these logs have already been shipped to Logz.io, we recommend that you empty the container before the deployment.
+If these logs have already been shipped to Logz.io, we recommend that you empty the container before the deployment or use the FilderDate and FilterDateJsonPath parameters.
 
 ## Instructions
 
@@ -52,6 +52,8 @@ You'll be taken to Azure Custom deployment page. Fill in all the parameters and 
 | Logzio URL | The Logz.io listener URL fot your region. (For more details, see the regions page: https://docs.logz.io/user-guide/accounts/account-region.html) |
 | Logzio Token | Your Logz.io logs token. (Can be retrieved from the Manage Token page.)
 | Multiline Regex | The regex that matches the multiline logs in text blob files. Leave empty if you do not use multiline logs in your text blob files. |
+| FilterDate | Every log with date greater or equals to this date will be shipped to Logz.io (for it to take effect FilterDateJson must not be empty). The date must be in the same format as date in the logs. Leave empty if you want all logs to be shipped to Logz.io. |
+| FilterDateJsonPath | The json path of the date inside each log (for example: metadata.datetime). If this value cannot be found inside a log, the log will be shipped to Logz.io. Leave empty if you are not using FilterDate. |
 
 On the following screen, press the **create** button:
 
