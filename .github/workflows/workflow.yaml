@@ -15,10 +15,6 @@ jobs:
       - name: Copy 'src' directory and rename it 'logzio_function'
         run: |
           cp -R src logzio_function
-      - name: Add Logz.io url and token to tests config file
-        run: |
-          sed -i 's#LOGZIO_URL\b#${{ secrets.LOGZIO_URL }}#1' tests/config.yaml
-          sed -i 's/LOGZIO_TOKEN\b/${{ secrets.LOGZIO_TOKEN }}/1' tests/config.yaml
       - name: Run unit tests
         run: |
           pip install pytest
