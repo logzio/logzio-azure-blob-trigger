@@ -1,3 +1,3 @@
 logzio:
-  url: LOGZIO_URL
-  token: LOGZIO_TOKEN
+  url: https://listener.logz.io:8071
+  token: 123456789a

@@ -22,7 +22,6 @@ class TestAzureFunctionGeneral(unittest.TestCase):
 
     JSON_DATETIME_LOG_FILE = 'tests/logs/json_datetime'
     BAD_LOGZIO_URL = 'https://bad.endpoint:1234'
-    BAD_LOGZIO_TOKEN = '123456789'
     BAD_URI = 'https:/bad.uri:1234'
     BAD_CONNECTION_ADAPTER_URL = 'bad://connection.adapter:1234'
     FILTER_DATE = '2021-09-20T10:10:10'
@@ -130,9 +129,12 @@ class TestAzureFunctionGeneral(unittest.TestCase):
         self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.ConnectionError, logzio_shipper.send_to_logzio)
 
+    @httpretty.activate
     def test_sending_bad_logzio_token(self) -> None:
+        httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=401)
+
         logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
-                                       TestAzureFunctionGeneral.BAD_LOGZIO_TOKEN)
+                                       os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME])
 
         self.tests_utils.add_first_log_to_logzio_shipper(self.file_parser, logzio_shipper)
         self.assertRaises(requests.HTTPError, logzio_shipper.send_to_logzio)
