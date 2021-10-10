@@ -166,6 +166,7 @@ class FileHandler:
 
         for log in self._file_parser.parse_file():
             if not self._is_log_date_greater_or_equal_filter_date(log):
+                logger.info("Log was not sent to Logzio because of filter date - {}".format(log))
                 continue
 
             try:
