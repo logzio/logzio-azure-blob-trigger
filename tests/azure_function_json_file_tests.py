@@ -47,12 +47,16 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
         self.json_file_handler = FileHandler(TestAzureFunctionJsonFile.JSON_LOG_FILE,
                                              TestAzureFunctionJsonFile.json_stream,
                                              TestAzureFunctionJsonFile.json_size)
+        self.json_file_custom_fields_bytes = self.tests_utils.get_file_custom_fields_bytes(self.json_file_handler)
         self.json_bad_logs_file_handler = FileHandler(TestAzureFunctionJsonFile.JSON_WITH_BAD_LINES_LOG_FILE,
                                                       TestAzureFunctionJsonFile.json_bad_logs_stream,
                                                       TestAzureFunctionJsonFile.json_bad_logs_size)
+        self.json_bad_logs_file_custom_fields_bytes = self.tests_utils.get_file_custom_fields_bytes(
+            self.json_bad_logs_file_handler)
         self.json_gz_file_handler = FileHandler(TestAzureFunctionJsonFile.JSON_GZ_LOG_FILE,
                                                 TestAzureFunctionJsonFile.json_gz_stream,
                                                 TestAzureFunctionJsonFile.json_size)
+        self.json_gz_file_custom_fields_bytes = self.tests_utils.get_file_custom_fields_bytes(self.json_gz_file_handler)
         self.json_parser = JsonParser(TestAzureFunctionJsonFile.json_stream)
 
         self.tests_utils.reset_file_streams_position([TestAzureFunctionJsonFile.json_stream,
@@ -80,10 +84,12 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
 
         TestAzureFunctionJsonFile.json_stream.seek(0)
         stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionJsonFile.json_stream)
+        stream_size = TestAzureFunctionJsonFile.json_size - stream_logs_num + 1
+        stream_size += stream_logs_num * self.json_file_custom_fields_bytes
 
         self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
         self.assertEqual(stream_logs_num, sent_logs_num)
-        self.assertEqual(TestAzureFunctionJsonFile.json_size - stream_logs_num + 1, sent_bytes)
+        self.assertEqual(stream_size, sent_bytes)
 
     @httpretty.activate
     def test_send_json_data_with_bad_logs(self) -> None:
@@ -94,6 +100,8 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
 
         TestAzureFunctionJsonFile.json_bad_logs_stream.seek(0)
         stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionJsonFile.json_bad_logs_stream)
+        stream_size = TestAzureFunctionJsonFile.json_bad_logs_size - stream_logs_num + 1
+        stream_size += stream_logs_num * self.json_bad_logs_file_custom_fields_bytes
 
         self.assertEqual(math.ceil(sent_bytes / LogzioShipper.MAX_BULK_SIZE_BYTES), requests_num)
         self.assertNotEqual(stream_logs_num, sent_logs_num)
@@ -103,14 +111,15 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
     def test_send_json_gz_data(self) -> None:
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=200)
 
-        gz_requests_num, gz_sent_logs_num, gz_sent_bytes = self.tests_utils.get_sending_file_results(
+        _, gz_sent_logs_num, gz_sent_bytes = self.tests_utils.get_sending_file_results(
             self.json_gz_file_handler, httpretty.latest_requests())
+        gz_sent_bytes -= gz_sent_logs_num * self.json_gz_file_custom_fields_bytes
 
         httpretty.latest_requests().clear()
         regular_requests_num, regular_sent_logs_num, regular_sent_bytes = self.tests_utils.get_sending_file_results(
             self.json_file_handler, httpretty.latest_requests())
+        regular_sent_bytes -= regular_sent_logs_num * self.json_file_custom_fields_bytes
 
-        self.assertEqual(regular_requests_num, gz_requests_num)
         self.assertEqual(regular_sent_logs_num, gz_sent_logs_num)
         self.assertEqual(regular_sent_bytes, gz_sent_bytes)
 

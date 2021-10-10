@@ -83,6 +83,8 @@ The Logz.io function supports the following file formats:
 
 - Gzip
 
+* The file name **does not** have to be with these extensions.
+
 ## Searching in Logz.io
 
 All logs that were sent from the function will be under the type `azure_blob_trigger` 
