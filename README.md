@@ -35,7 +35,7 @@ Will auto-deploy the following resources:
 [![Deploy to Azure](https://azuredeploy.net/deploybutton.png)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Flogzio%2Flogzio-azure-blob-trigger%2Fmain%2Fazure%2Ffunction-auto-deployment.json)
 
 * When deploying the Logz.io function, logs that were in the container before the deployment will be shipped to Logz.io.
-If these logs have already been shipped to Logz.io, we recommend that you empty the container before the deployment or use the FilderDate and FilterDateJsonPath parameters.
+If these logs have already been shipped to Logz.io, we recommend that you empty the container before the deployment or use the FilterDate and FilterDateJsonPath parameters.
 
 ## Instructions
 
