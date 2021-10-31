@@ -17,7 +17,7 @@ class JsonParser(FileParser):
 
     def parse_file(self) -> Generator:
         while True:
-            log = self.file_stream.readline().decode("utf-8").rstrip()
+            log = self._file_stream.readline().decode("utf-8").rstrip()
 
             if log == '':
                 break
@@ -27,3 +27,4 @@ class JsonParser(FileParser):
                 yield log
             except ValueError:
                 logger.error("The following json is not valid: {}".format(log))
+                self._are_all_logs_parsed = False

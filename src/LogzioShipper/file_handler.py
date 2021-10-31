@@ -162,31 +162,29 @@ class FileHandler:
             return None
 
     def _send_logs_to_logzio(self) -> None:
-        is_log_added_to_send = False
-
         for log in self._file_parser.parse_file():
-            if not self._is_log_date_greater_or_equal_filter_date(log):
-                logger.info("Log was not sent to Logzio because of filter date - {}".format(log))
+            if not self._is_log_date_greater_or_equal_date_filter(log):
+                logger.info("Log was not sent to Logzio because of date filter - {}".format(log))
                 continue
 
             try:
                 self._logzio_shipper.add_log_to_send(log)
-                is_log_added_to_send = True
             except Exception:
                 logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
                 raise self.FailedToSendLogsError()
-
-        if not is_log_added_to_send:
-            logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
-            raise self.FailedToSendLogsError()
 
         try:
             self._logzio_shipper.send_to_logzio()
         except Exception:
             logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
             raise self.FailedToSendLogsError()
+        
+        if not self._file_parser._are_all_logs_parsed:
+            logger.error("Some logs did not send to Logz.io in {}".format(self._file_name))
+            raise self.FailedToSendLogsError()
 
-    def _is_log_date_greater_or_equal_filter_date(self, log: str) -> bool:
+
+    def _is_log_date_greater_or_equal_date_filter(self, log: str) -> bool:
         if self._filter_date is not None and self._filter_date_json_path is not None:
             json_log = json.loads(log)
             match = parse(self._filter_date_json_path).find(json_log)

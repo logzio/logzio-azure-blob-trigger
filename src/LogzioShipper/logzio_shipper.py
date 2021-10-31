@@ -52,7 +52,7 @@ class LogzioShipper:
         self._bulk_size = enriched_log_size
 
     def send_to_logzio(self) -> None:
-        if self._logs is None:
+        if len(self._logs) == 0:
             return
 
         try:
