@@ -179,10 +179,9 @@ class FileHandler:
             logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
             raise self.FailedToSendLogsError()
         
-        if not self._file_parser._are_all_logs_parsed:
+        if not self._file_parser.are_all_logs_parsed:
             logger.error("Some logs did not send to Logz.io in {}".format(self._file_name))
             raise self.FailedToSendLogsError()
-
 
     def _is_log_date_greater_or_equal_date_filter(self, log: str) -> bool:
         if self._filter_date is not None and self._filter_date_json_path is not None:
