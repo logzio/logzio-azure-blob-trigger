@@ -40,23 +40,14 @@ class TestAzureFunctionGeneral(unittest.TestCase):
     def setUp(self) -> None:
         self.tests_utils = TestsUtils()
 
-        self.tests_utils.reset_file_streams_position([TestAzureFunctionGeneral.json_datetime_stream])
-
-        os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = TestAzureFunctionGeneral.FILTER_DATE_JSON_PATH
-        self.file_handler = FileHandler(TestAzureFunctionGeneral.JSON_DATETIME_LOG_FILE,
-                                        TestAzureFunctionGeneral.json_datetime_stream,
-                                        TestAzureFunctionGeneral.json_datetime_size)
-        self.file_custom_fields_bytes = self.tests_utils.get_file_custom_fields_bytes(self.file_handler)
-        self.file_parser = JsonParser(TestAzureFunctionGeneral.json_datetime_stream)
-
         TestAzureFunctionGeneral.json_datetime_stream.seek(0)
 
-        os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = TestAzureFunctionGeneral.BAD_FILTER_DATE_JSON_PATH
-        self.file_bad_filter_handler = FileHandler(TestAzureFunctionGeneral.JSON_DATETIME_LOG_FILE,
-                                                   TestAzureFunctionGeneral.json_datetime_stream,
-                                                   TestAzureFunctionGeneral.json_datetime_size)
-
-        self.tests_utils.reset_file_streams_position([TestAzureFunctionGeneral.json_datetime_stream])
+        os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = TestAzureFunctionGeneral.FILTER_DATE_JSON_PATH
+        self.file_handler = self.tests_utils.create_file_handler(TestAzureFunctionGeneral.JSON_DATETIME_LOG_FILE,
+                                                                 TestAzureFunctionGeneral.json_datetime_stream,
+                                                                 TestAzureFunctionGeneral.json_datetime_size)
+        self.file_custom_fields_bytes = self.tests_utils.get_file_custom_fields_bytes(self.file_handler)
+        self.file_parser = JsonParser(TestAzureFunctionGeneral.json_datetime_stream)
 
     @httpretty.activate
     def test_send_retry_status_500(self) -> None:
@@ -170,9 +161,14 @@ class TestAzureFunctionGeneral(unittest.TestCase):
     @httpretty.activate
     def test_bad_filter_date(self) -> None:
         httpretty.register_uri(httpretty.POST, os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status=200)
+        os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = TestAzureFunctionGeneral.BAD_FILTER_DATE_JSON_PATH
 
-        requests_num, sent_logs_num, sent_bytes = self.tests_utils.get_sending_file_results(
-            self.file_bad_filter_handler, httpretty.latest_requests())
+        file_bad_filter_handler = FileHandler(TestAzureFunctionGeneral.JSON_DATETIME_LOG_FILE,
+                                              TestAzureFunctionGeneral.json_datetime_stream,
+                                              TestAzureFunctionGeneral.json_datetime_size)
+
+        requests_num, sent_logs_num, sent_bytes = self.tests_utils.get_sending_file_results(file_bad_filter_handler,
+                                                                                            httpretty.latest_requests())
 
         TestAzureFunctionGeneral.json_datetime_stream.seek(0)
         stream_logs_num = self.tests_utils.get_file_stream_logs_num(TestAzureFunctionGeneral.json_datetime_stream)

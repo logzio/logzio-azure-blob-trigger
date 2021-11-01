@@ -42,19 +42,23 @@ class TestsUtils:
 
         return BytesIO(compressed_data)
 
-    def get_parsed_logs_num(self, file_parser: FileParser) -> int:
+    def get_parsed_logs_num(self, file_parser: FileParser, file_stream: BytesIO) -> int:
         parsed_logs_num = 0
 
         for _ in file_parser.parse_file():
             parsed_logs_num += 1
 
+        file_stream.seek(0)
+
         return parsed_logs_num
 
-    def get_parsed_logs_bytes(self, file_parser: FileParser) -> int:
+    def get_parsed_logs_bytes(self, file_parser: FileParser, file_stream: BytesIO) -> int:
         parsed_logs_bytes = 0
 
         for log in file_parser.parse_file():
             parsed_logs_bytes += len(log)
+
+        file_stream.seek(0)
 
         return parsed_logs_bytes
 
@@ -63,6 +67,8 @@ class TestsUtils:
 
         for _ in file_stream:
             logs_num += 1
+
+        file_stream.seek(0)
 
         return logs_num
 
@@ -90,10 +96,6 @@ class TestsUtils:
             logzio_shipper.add_log_to_send(log)
             break
 
-    def reset_file_streams_position(self, file_streams: List[BytesIO]) -> None:
-        for file_stream in file_streams:
-            file_stream.seek(0)
-
     def get_file_custom_fields_bytes(self, file_handler: FileHandler) -> int:
         custom_fields: dict = {}
 
@@ -101,3 +103,10 @@ class TestsUtils:
             custom_fields[custom_field.key] = custom_field.value
 
         return len(json.dumps(custom_fields))
+
+    def create_file_handler(self, file_name: str, file_stream: BytesIO, file_size: int) -> FileHandler:
+        file_handler = FileHandler(file_name, file_stream, file_size)
+
+        file_stream.seek(0)
+
+        return file_handler
