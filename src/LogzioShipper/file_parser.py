@@ -5,7 +5,7 @@ from io import BufferedIOBase
 
 class FileParser(ABC):
 
-    def __init__(self, file_stream:BufferedIOBase) -> None:
+    def __init__(self, file_stream: BufferedIOBase) -> None:
         self._file_stream = file_stream
         self._are_all_logs_parsed = True
 
