@@ -5,7 +5,6 @@ import os
 import httpretty
 import math
 
-from logging.config import fileConfig
 from io import BytesIO
 from requests.sessions import InvalidSchema
 from .tests_utils import TestsUtils
@@ -14,7 +13,6 @@ from src.LogzioShipper.json_parser import JsonParser
 from src.LogzioShipper.logzio_shipper import LogzioShipper
 
 
-fileConfig('tests/logging_config.ini', disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +31,7 @@ class TestAzureFunctionGeneral(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        TestsUtils.set_up()
+        TestsUtils.set_up(FileHandler.JSON_FORMAT_VALUE)
 
         os.environ[FileHandler.FILTER_DATE_ENVIRON_NAME] = cls.FILTER_DATE
         cls.json_datetime_stream, cls.json_datetime_size = TestsUtils.get_file_stream_and_size(

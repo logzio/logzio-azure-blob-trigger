@@ -4,7 +4,6 @@ import os
 import httpretty
 import math
 
-from logging.config import fileConfig
 from io import BytesIO
 from .tests_utils import TestsUtils
 from src.LogzioShipper.file_handler import FileHandler
@@ -12,7 +11,6 @@ from src.LogzioShipper.json_parser import JsonParser
 from src.LogzioShipper.logzio_shipper import LogzioShipper
 
 
-fileConfig('tests/logging_config.ini', disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +28,7 @@ class TestAzureFunctionJsonFile(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        TestsUtils.set_up()
+        TestsUtils.set_up(FileHandler.JSON_FORMAT_VALUE)
 
         cls.json_stream, cls.json_size = TestsUtils.get_file_stream_and_size(cls.JSON_LOG_FILE)
         cls.json_bad_logs_stream, cls.json_bad_logs_size = TestsUtils.get_file_stream_and_size(

@@ -1,28 +1,32 @@
+import logging
 import gzip
-import yaml
 import os
 import json
 
 from typing import Tuple, List
+from logging.config import fileConfig
 from io import BytesIO
 from src.LogzioShipper.file_parser import FileParser
 from src.LogzioShipper.file_handler import FileHandler
 from src.LogzioShipper.logzio_shipper import LogzioShipper
 
 
+fileConfig('tests/logging_config.ini', disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
+
+
 class TestsUtils:
 
-    CONFIGURATION_FILE = 'tests/config.yaml'
+    LOGZIO_URL = 'https://listener.logz.io:8071'
+    LOGZIO_TOKEN = '123456789a'
 
     @staticmethod
-    def set_up() -> None:
-        with open(TestsUtils.CONFIGURATION_FILE, 'r') as yaml_file:
-            config = yaml.load(yaml_file, Loader=yaml.FullLoader)
-
-            os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME] = config['logzio']['url']
-            os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME] = config['logzio']['token']
-            os.environ[FileHandler.FILTER_DATE_ENVIRON_NAME] = FileHandler.NO_FILTER_DATE_VALUE
-            os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = FileHandler.NO_FILTER_DATE_JSON_PATH_VALUE
+    def set_up(file_format: str) -> None:
+        os.environ[FileHandler.FORMAT_ENVIRON_NAME] = file_format
+        os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME] = TestsUtils.LOGZIO_URL
+        os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME] = TestsUtils.LOGZIO_TOKEN
+        os.environ[FileHandler.FILTER_DATE_ENVIRON_NAME] = FileHandler.NO_FILTER_DATE_VALUE
+        os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = FileHandler.NO_FILTER_DATE_JSON_PATH_VALUE
 
     @staticmethod
     def get_file_stream_and_size(file_path: str) -> Tuple[BytesIO, int]:

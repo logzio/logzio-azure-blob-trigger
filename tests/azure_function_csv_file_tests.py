@@ -4,7 +4,6 @@ import os
 import httpretty
 import math
 
-from logging.config import fileConfig
 from io import BytesIO
 from .tests_utils import TestsUtils
 from src.LogzioShipper.file_handler import FileHandler
@@ -12,7 +11,6 @@ from src.LogzioShipper.csv_parser import CsvParser
 from src.LogzioShipper.logzio_shipper import LogzioShipper
 
 
-fileConfig('tests/logging_config.ini', disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 
 
@@ -34,7 +32,7 @@ class TestAzureFunctionCsvFile(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        TestsUtils.set_up()
+        TestsUtils.set_up(FileHandler.CSV_FORMAT_VALUE)
 
         cls.csv_comma_delimiter_stream, cls.csv_comma_delimiter_size = TestsUtils.get_file_stream_and_size(
             cls.CSV_COMMA_DELIMITER_LOG_FILE)

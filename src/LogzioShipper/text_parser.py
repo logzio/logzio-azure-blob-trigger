@@ -50,14 +50,14 @@ class TextParser(FileParser):
     def _get_multiline_log(self, multiline_log: str) -> Optional[str]:
         while True:
             try:
-                match = re.fullmatch(self._multiline_regex, multiline_log)
+                if re.fullmatch(self._multiline_regex, multiline_log) is not None:
+                    return multiline_log
+                elif re.fullmatch(self._multiline_regex, multiline_log.rstrip()) is not None:
+                    return multiline_log.rstrip()
             except Exception as e:
                 logger.error("Something is wrong with the multiline regex {0} - {1}".format(repr(self._multiline_regex),
                                                                                             e))
                 raise
-
-            if match is not None:
-                return multiline_log
 
             line = self._file_stream.readline().decode("utf-8")
 
