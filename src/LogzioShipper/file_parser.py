@@ -10,9 +10,9 @@ class FileParser(ABC):
         self._are_all_logs_parsed = True
 
     @property
-    def are_all_logs_parsed(self):
+    def are_all_logs_parsed(self) -> bool:
         return self._are_all_logs_parsed
 
     @abstractmethod
-    def parse_file(self) -> Generator:
+    def parse_file(self) -> Generator[str, None, None]:
         pass

@@ -15,7 +15,7 @@ class JsonParser(FileParser):
     def __init__(self, file_stream: BytesIO) -> None:
         super().__init__(file_stream)
 
-    def parse_file(self) -> Generator:
+    def parse_file(self) -> Generator[str, None, None]:
         while True:
             log = self._file_stream.readline().decode("utf-8").rstrip()
 

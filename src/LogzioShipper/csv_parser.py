@@ -18,7 +18,7 @@ class CsvParser(FileParser):
         super().__init__(file_stream)
         self._delimiter = delimiter
 
-    def parse_file(self) -> Generator:
+    def parse_file(self) -> Generator[str, None, None]:
         logs = [self._file_stream.readline().decode("utf-8").rstrip(), '']
 
         while True:
