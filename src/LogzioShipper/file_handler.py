@@ -162,7 +162,7 @@ class FileHandler:
             return str(dialect.delimiter)
         except csv.Error:
             logger.error(
-                "Could not determine delimiter for the csv file - {}. Using text format.".format(self._file_name))
+                "Could not determine delimiter for the csv file - {} . Using text format instead.".format(self._file_name))
 
         return None
 
