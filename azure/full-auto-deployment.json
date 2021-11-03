@@ -27,6 +27,18 @@
         "description": "The path from where blob files will trigger the Logz.io function (including sub directories in that path). Leave empty if you want that every blob file in the container will trigger the Logz.io function."
       }
     },
+    "Format": {
+      "defaultValue": "JSON",
+      "type": "string",
+      "allowedValues": [
+        "JSON",
+        "CSV",
+        "TEXT"
+      ],
+      "metadata": {
+        "description": "The format of the logs."
+      }
+    },
     "LogzioURL": {
       "defaultValue": "https://listener.logz.io:8071",
       "type": "string",
@@ -212,6 +224,10 @@
             {
               "name": "ContainerLogsPath",
               "value": "[if(equals(parameters('LogsPath'), ''), concat(parameters('ContainerName'), '/{name}'), concat(parameters('ContainerName'), '/', parameters('LogsPath'), '/{name}'))]"
+            },
+            {
+              "name": "Format",
+              "value": "[parameters('Format')]"
             },
             {
               "name": "MultilineRegex",

@@ -18,11 +18,11 @@ class CsvParser(FileParser):
         super().__init__(file_stream)
         self._delimiter = delimiter
 
-    def parse_file(self) -> Generator:
-        logs = [self.file_stream.readline().decode("utf-8").rstrip(), '']
+    def parse_file(self) -> Generator[str, None, None]:
+        logs = [self._file_stream.readline().decode("utf-8").rstrip(), '']
 
         while True:
-            logs[1] = self.file_stream.readline().decode("utf-8").rstrip()
+            logs[1] = self._file_stream.readline().decode("utf-8").rstrip()
 
             if logs[1] == '':
                 break

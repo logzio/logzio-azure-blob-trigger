@@ -27,7 +27,7 @@ class LogzioShipper:
 
     def __init__(self, logzio_url: str, token: str) -> None:
         self._logzio_url = "{0}/?token={1}&type=azure_blob_trigger".format(logzio_url, token)
-        self._logs = []
+        self._logs: list[str] = []
         self._bulk_size = 0
         self._custom_fields: list[CustomField] = []
 
@@ -52,7 +52,7 @@ class LogzioShipper:
         self._bulk_size = enriched_log_size
 
     def send_to_logzio(self) -> None:
-        if self._logs is None:
+        if len(self._logs) == 0:
             return
 
         try:

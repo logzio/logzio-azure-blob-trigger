@@ -22,16 +22,18 @@ logger.setLevel(logging.INFO)
 
 class FileHandler:
 
-    JSON_STARTING_CHAR = '{'
     GZ_MAGIC_NUMBER = b'\x1f\x8b'
-    CSV_DELIMITERS: Optional[str] = [',', ';', '|']
 
+    FORMAT_ENVIRON_NAME = 'Format'
     LOGZIO_URL_ENVIRON_NAME = 'LogzioURL'
     LOGZIO_TOKEN_ENVIRON_NAME = 'LogzioToken'
     MULTILINE_REGEX_ENVIRON_NAME = 'MultilineRegex'
     FILTER_DATE_ENVIRON_NAME = 'FilterDate'
     FILTER_DATE_JSON_PATH_ENVIRON_NAME = 'FilterDateJsonPath'
 
+    JSON_FORMAT_VALUE = 'JSON'
+    CSV_FORMAT_VALUE = 'CSV'
+    TEXT_FORMAT_VALUE = 'TEXT'
     NO_FILTER_DATE_VALUE = 'NO_FILTER_DATE'
     NO_FILTER_DATE_JSON_PATH_VALUE = 'NO_FILTER_DATE_JSON_PATH'
 
@@ -69,7 +71,7 @@ class FileHandler:
         try:
             self._send_logs_to_logzio()
         except Exception:
-            raise self.FailedToSendLogsError()
+            raise
 
         logger.info("Successfully finished processing file - {}".format(self._file_name))
 
@@ -132,18 +134,16 @@ class FileHandler:
         return filter_date_json_path
 
     def _get_file_parser(self) -> FileParser:
-        logs_sample = [self._file_stream.readline().decode("utf-8").rstrip(),
-                       self._file_stream.readline().decode("utf-8").rstrip()]
+        file_format = os.environ[FileHandler.FORMAT_ENVIRON_NAME]
 
-        self._file_stream.seek(0)
-
-        if logs_sample[0].startswith(FileHandler.JSON_STARTING_CHAR):
+        if file_format == FileHandler.JSON_FORMAT_VALUE:
             return JsonParser(self._file_stream)
 
-        delimiter = self._is_file_csv(logs_sample)
+        if file_format == FileHandler.CSV_FORMAT_VALUE:
+            delimiter = self._get_csv_delimiter()
 
-        if delimiter is not None:
-            return CsvParser(self._file_stream, delimiter)
+            if delimiter is not None:
+                return CsvParser(self._file_stream, delimiter)
 
         return TextParser(self._file_stream, os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME])
 
@@ -151,42 +151,41 @@ class FileHandler:
         for custom_field in self._custom_fields:
             self._logzio_shipper.add_custom_field_to_list(custom_field)
 
-    def _is_file_csv(self, logs_sample: list) -> Optional[str]:
-        sample = '\n'.join(logs_sample)
+    def _get_csv_delimiter(self) -> Optional[str]:
+        logs_sample = [self._file_stream.readline().decode("utf-8").rstrip(),
+                       self._file_stream.readline().decode("utf-8").rstrip()]
+
+        self._file_stream.seek(0)
 
         try:
-            dialect = csv.Sniffer().sniff(sample, FileHandler.CSV_DELIMITERS)
-
+            dialect = csv.Sniffer().sniff('\n'.join(logs_sample))
             return str(dialect.delimiter)
         except csv.Error:
-            return None
+            logger.error(
+                "Could not determine delimiter for the csv file - {} . Using text format instead.".format(self._file_name))
+
+        return None
 
     def _send_logs_to_logzio(self) -> None:
-        is_log_added_to_send = False
-
         for log in self._file_parser.parse_file():
-            if not self._is_log_date_greater_or_equal_filter_date(log):
-                logger.info("Log was not sent to Logzio because of filter date - {}".format(log))
+            if not self._is_log_date_greater_or_equal_date_filter(log):
+                logger.info("Log was not sent to Logz.io because of date filter - {}".format(log))
                 continue
 
             try:
                 self._logzio_shipper.add_log_to_send(log)
-                is_log_added_to_send = True
             except Exception:
-                logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
-                raise self.FailedToSendLogsError()
-
-        if not is_log_added_to_send:
-            logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
-            raise self.FailedToSendLogsError()
+                raise self.FailedToSendLogsError("Failed to send logs to Logz.io for {}".format(self._file_name))
 
         try:
             self._logzio_shipper.send_to_logzio()
         except Exception:
-            logger.error("Failed to send logs to Logz.io for {}".format(self._file_name))
-            raise self.FailedToSendLogsError()
+            raise self.FailedToSendLogsError("Failed to send logs to Logz.io for {}".format(self._file_name))
+        
+        if not self._file_parser.are_all_logs_parsed:
+            raise self.FailedToSendLogsError("Some/All logs did not send to Logz.io in {}".format(self._file_name))
 
-    def _is_log_date_greater_or_equal_filter_date(self, log: str) -> bool:
+    def _is_log_date_greater_or_equal_date_filter(self, log: str) -> bool:
         if self._filter_date is not None and self._filter_date_json_path is not None:
             json_log = json.loads(log)
             match = parse(self._filter_date_json_path).find(json_log)
