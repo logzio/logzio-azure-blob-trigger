@@ -4,6 +4,7 @@ import json
 
 from typing import Generator, Optional
 from io import BytesIO
+from datetime import datetime
 from .file_parser import FileParser
 
 
@@ -13,14 +14,13 @@ logger.setLevel(logging.INFO)
 
 class TextParser(FileParser):
 
-    NO_REGEX_VALUE = 'NO_REGEX'
-
-    def __init__(self, file_stream: BytesIO, multiline_regex: str) -> None:
-        super().__init__(file_stream)
+    def __init__(self, file_stream: BytesIO, multiline_regex: str, datetime_finder: Optional[str] = None,
+                 datetime_format: Optional[str] = None) -> None:
+        super().__init__(file_stream, datetime_finder, datetime_format)
         self._multiline_regex = multiline_regex
 
     def parse_file(self) -> Generator[str, None, None]:
-        if self._multiline_regex != TextParser.NO_REGEX_VALUE:
+        if self._multiline_regex is not None:
             while True:
                 log = self._file_stream.readline().decode("utf-8")
 
@@ -47,6 +47,28 @@ class TextParser(FileParser):
 
                 yield self._get_json_log(log)
 
+    def get_log_datetime(self, log: str) -> Optional[datetime]:
+        if self._datetime_finder is not None and self._datetime_format is not None:
+            try:
+                matches = re.findall(self._datetime_finder, log)
+            except re.error as e:
+                logger.error(
+                    "Something is wrong with the datetime finder regex {0} - {1}".format(repr(self._datetime_finder), e))
+                return None
+
+            if len(matches) == 0:
+                return None
+
+            try:
+                log_datetime = datetime.strptime(matches[0], self._datetime_format)
+            except ValueError:
+                logger.error("datetime in log {0} does not match datetime format {1}".format(log, self._datetime_format))
+                return None
+
+            return log_datetime
+
+        return None
+
     def _get_multiline_log(self, multiline_log: str) -> Optional[str]:
         while True:
             try:
@@ -54,7 +76,7 @@ class TextParser(FileParser):
                     return multiline_log
                 elif re.fullmatch(self._multiline_regex, multiline_log.rstrip()) is not None:
                     return multiline_log.rstrip()
-            except Exception as e:
+            except re.error as e:
                 logger.error("Something is wrong with the multiline regex {0} - {1}".format(repr(self._multiline_regex),
                                                                                             e))
                 raise

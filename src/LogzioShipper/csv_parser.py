@@ -3,7 +3,7 @@ import io
 import csv
 import json
 
-from typing import Generator
+from typing import Generator, Optional
 from io import BytesIO
 from .file_parser import FileParser
 
@@ -14,8 +14,9 @@ logger.setLevel(logging.INFO)
 
 class CsvParser(FileParser):
     
-    def __init__(self, file_stream: BytesIO, delimiter: str) -> None:
-        super().__init__(file_stream)
+    def __init__(self, file_stream: BytesIO, delimiter: str, datetime_finder: Optional[str],
+                 datetime_format: Optional[str]) -> None:
+        super().__init__(file_stream, datetime_finder, datetime_format)
         self._delimiter = delimiter
 
     def parse_file(self) -> Generator[str, None, None]:
