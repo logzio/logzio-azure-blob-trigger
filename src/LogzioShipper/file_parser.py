@@ -4,7 +4,6 @@ import json
 from abc import ABC, abstractmethod
 from typing import Generator, Optional, Any
 from io import BufferedIOBase
-from jsonpath_ng import parse, JSONPathError
 from datetime import datetime
 
 
@@ -20,14 +19,6 @@ class FileParser(ABC):
         self._datetime_finder = datetime_finder
         self._datetime_format = datetime_format
         self._are_all_logs_parsed = True
-
-        if self._datetime_finder is not None:
-            try:
-                self._json_path_parser = parse(self._datetime_finder)
-            except JSONPathError:
-                self._json_path_parser = None
-        else:
-            self._json_path_parser = None
 
     @property
     def are_all_logs_parsed(self) -> bool:
@@ -49,9 +40,11 @@ class FileParser(ABC):
             return None
 
         json_log = json.loads(log)
-        match = self._json_path_parser.find(json_log)
+        match = json_path_parser.find(json_log)
 
         if not match or match[0].value is None:
+            logger.error("No match has been found with datetime finder json path {0} for log - {1}".format(
+                self._datetime_finder, log))
             return None
 
         try:

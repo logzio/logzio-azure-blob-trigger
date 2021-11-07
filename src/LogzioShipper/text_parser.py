@@ -19,6 +19,11 @@ class TextParser(FileParser):
         super().__init__(file_stream, datetime_finder, datetime_format)
         self._multiline_regex = multiline_regex
 
+        if self._multiline_regex is None:
+            logger.info('Text multiline is desabled.')
+        else:
+            logger.info('Text multiline is enabled.')
+
     def parse_file(self) -> Generator[str, None, None]:
         if self._multiline_regex is not None:
             while True:
@@ -33,7 +38,7 @@ class TextParser(FileParser):
                     break
 
                 if multiline_log is None:
-                    logger.error("There is no match using the regex {}".format(repr(self._multiline_regex)))
+                    logger.error("There is no match using the multiline regex {}".format(repr(self._multiline_regex)))
                     self._are_all_logs_parsed = False
                     break
 
@@ -55,10 +60,12 @@ class TextParser(FileParser):
             matches = re.findall(self._datetime_finder, log)
         except re.error as e:
             logger.error(
-                "Something is wrong with the datetime finder regex {0} - {1}".format(repr(self._datetime_finder), e))
+                "Something is wrong with datetime finder regex {0} - {1}".format(repr(self._datetime_finder), e))
             return None
 
         if not matches:
+            logger.error("No match has been found with datetime finder regex {0} for log - {1}".format(
+                self._datetime_finder, log))
             return None
 
         try:

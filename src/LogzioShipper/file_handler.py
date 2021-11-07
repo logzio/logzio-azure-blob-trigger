@@ -23,7 +23,6 @@ logger.setLevel(logging.INFO)
 class FileHandler:
 
     GZ_MAGIC_NUMBER = b'\x1f\x8b'
-    JSON_CHAR = '{'
 
     FORMAT_ENVIRON_NAME = 'Format'
     LOGZIO_URL_ENVIRON_NAME = 'LogzioURL'
@@ -47,6 +46,8 @@ class FileHandler:
         self._file_name = file_name
         self._file_stream = self._get_seekable_file_stream(file_stream)
         self._file_size = file_size
+        self._datetime_filter = self._get_datetime_filter()
+        self._datetime_finder = self._get_datetime_finder()
         self._datetime_format = self._get_datetime_format()
         self._is_default_file_parser = False
         self._file_format = os.environ[FileHandler.FORMAT_ENVIRON_NAME]
@@ -163,35 +164,36 @@ class FileHandler:
         return datetime_format
 
     def _get_file_parser(self) -> FileParser:
-        datetime_finder = self._get_datetime_finder()
-
         logs_sample = [self._file_stream.readline().decode("utf-8").rstrip(),
                        self._file_stream.readline().decode("utf-8").rstrip()]
 
         self._file_stream.seek(0)
 
         if self._file_format == FileHandler.JSON_FORMAT_VALUE:
-            if logs_sample[0].startswith(FileHandler.JSON_CHAR):
-                return JsonParser(self._file_stream, datetime_finder, self._datetime_format)
-
-            logger.error(
-                "Json file - {0} does not start with '{1}'. Using text format instead.".format(self._file_name,
-                                                                                               FileHandler.JSON_CHAR))
-            self._is_default_file_parser = True
-            return TextParser(self._file_stream)
+            self._write_is_datetime_filter_enabled()
+            return JsonParser(self._file_stream, self._datetime_finder, self._datetime_format)
 
         if self._file_format == FileHandler.CSV_FORMAT_VALUE:
             delimiter = self._get_csv_delimiter(logs_sample)
 
             if delimiter is not None:
-                return CsvParser(self._file_stream, delimiter, datetime_finder, self._datetime_format)
+                self._write_is_datetime_filter_enabled()
+                return CsvParser(self._file_stream, delimiter, self._datetime_finder, self._datetime_format)
 
+            logger.info('Datetime filter is disabled.')
             self._is_default_file_parser = True
             return TextParser(self._file_stream)
 
         multiline_regex = self._get_multiline_regex()
+        self._write_is_datetime_filter_enabled()
 
-        return TextParser(self._file_stream, multiline_regex, datetime_finder, self._datetime_format)
+        return TextParser(self._file_stream, multiline_regex, self._datetime_finder, self._datetime_format)
+
+    def _write_is_datetime_filter_enabled(self) -> None:
+        if self._datetime_filter is None or self._datetime_finder is None or self._datetime_format is None:
+            logger.info('Datetime filter is disabled.')
+        else:
+            logger.info('Datetime filter is enabled.')
 
     def _add_custom_fields_to_logzio_shipper(self) -> None:
         for custom_field in self._custom_fields:
@@ -209,13 +211,12 @@ class FileHandler:
         return None
 
     def _send_logs_to_logzio(self) -> None:
-        datetime_filter = self._get_datetime_filter()
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
         executor.submit(self._logzio_shipper.run_logzio_shipper)
 
         for log in self._file_parser.parse_file():
-            if not self._is_log_datetime_greater_or_equal_datetime_filter(datetime_filter, log):
+            if not self._is_log_datetime_greater_or_equal_datetime_filter(self._datetime_filter, log):
                 logger.info("Log was not sent to Logz.io because of datetime filter - {}".format(log))
                 continue
 
