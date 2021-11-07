@@ -27,6 +27,9 @@ class ConsumerProducerQueues:
         self._logs_queue.put(ConsumerProducerQueues.END_LOG)
 
     def get_info_from_queue(self) -> Optional[str]:
+        if self._info_queue.empty():
+            return None
+
         try:
             info_message = self._info_queue.get(timeout=1)
         except queue.Empty:
@@ -38,6 +41,9 @@ class ConsumerProducerQueues:
         self._info_queue.put(info_message)
 
     def get_error_from_queue(self) -> Optional[str]:
+        if self._errors_queue.empty():
+            return None
+
         try:
             error_message = self._errors_queue.get(timeout=1)
         except queue.Empty:
