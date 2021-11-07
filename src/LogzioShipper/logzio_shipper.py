@@ -1,4 +1,3 @@
-import logging
 import requests
 import threading
 import concurrent.futures
@@ -9,12 +8,8 @@ from typing import List, Optional
 from requests.adapters import HTTPAdapter, RetryError
 from requests.sessions import InvalidSchema, Session
 from urllib3.util.retry import Retry
-from .logs_queue import LogsQueue
+from .consumer_producer_queues import ConsumerProducerQueues
 from .custom_field import CustomField
-
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class LogzioShipper:
@@ -29,9 +24,10 @@ class LogzioShipper:
     STATUS_FORCELIST = [500, 502, 503, 504]
     CONNECTION_TIMEOUT_SECONDS = 5
 
-    def __init__(self, logzio_url: str, token: str, logs_queue: LogsQueue, version: str) -> None:
-        self._logzio_url = "{0}/?token={1}&type=azure_blob_trigger".format(logzio_url, token)
-        self._logs_queue = logs_queue
+    def __init__(self, logzio_url: str, logzio_token: str, consumer_producer_queues: ConsumerProducerQueues,
+                 version: str) -> None:
+        self._logzio_url = "{0}/?token={1}&type=azure_blob_trigger".format(logzio_url, logzio_token)
+        self._consumer_producer_queues = consumer_producer_queues
         self._version = version
         self._session = self._get_request_retry_session()
         self._lock = threading.Lock()
@@ -55,7 +51,7 @@ class LogzioShipper:
             if self._exception is not None:
                 break
 
-            log = self._logs_queue.get_log_from_queue()
+            log = self._consumer_producer_queues.get_log_from_queue()
 
             if log is None:
                 self._executor.submit(self._send_to_logzio, self._logs, self._bulk_size)
@@ -100,7 +96,8 @@ class LogzioShipper:
                                           headers=headers,
                                           timeout=LogzioShipper.CONNECTION_TIMEOUT_SECONDS)
             response.raise_for_status()
-            logger.info("Successfully sent bulk of {} bytes to Logz.io.".format(bulk_size))
+            self._consumer_producer_queues.put_info_into_queue(
+                "Successfully sent bulk of {} bytes to Logz.io.".format(bulk_size))
         except requests.ConnectionError as e:
             message = "Can't establish connection to {0} url. Please make sure your url is a Logz.io valid url. Max retries of {1} has reached. response: {2}".format(
                     self._logzio_url, LogzioShipper.MAX_RETRIES, e)
@@ -145,14 +142,14 @@ class LogzioShipper:
         self._lock.acquire()
 
         if self._exception is None:
-            logger.error(message)
+            self._consumer_producer_queues.put_error_into_queue(message)
             self._exception = exception
 
         self._lock.release()
 
     def _is_log_valid_to_be_sent(self, log: str, log_size: int) -> bool:
         if log_size > LogzioShipper.MAX_LOG_SIZE_BYTES:
-            logger.error(
+            self._consumer_producer_queues.put_error_into_queue(
                 "The following log's size is greater than the max log size - {0} bytes, that can be sent to Logz.io: {1}".format(
                     LogzioShipper.MAX_LOG_SIZE_BYTES, log))
 

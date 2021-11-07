@@ -9,7 +9,7 @@ from logging.config import fileConfig
 from io import BytesIO
 from src.LogzioShipper.file_parser import FileParser
 from src.LogzioShipper.file_handler import FileHandler
-from src.LogzioShipper.logs_queue import LogsQueue
+from src.LogzioShipper.consumer_producer_queues import ConsumerProducerQueues
 
 
 fileConfig('tests/logging_config.ini', disable_existing_loggers=False)
@@ -26,7 +26,6 @@ class TestsUtils:
         os.environ[FileHandler.FORMAT_ENVIRON_NAME] = file_format
         os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME] = TestsUtils.LOGZIO_URL
         os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME] = TestsUtils.LOGZIO_TOKEN
-        os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME] = FileHandler.NO_MULTILINE_REGEX_VALUE
         os.environ[FileHandler.DATETIME_FILTER_ENVIRON_NAME] = FileHandler.NO_DATETIME_FILTER_VALUE
         os.environ[FileHandler.DATETIME_FINDER_ENVIRON_NAME] = FileHandler.NO_DATETIME_FINDER_VALUE
         os.environ[FileHandler.DATETIME_FORMAT_ENVIRON_NAME] = FileHandler.NO_DATETIME_FORMAT_VALUE
@@ -97,12 +96,13 @@ class TestsUtils:
 
         return requests_num, sent_logs_num, sent_bytes
 
-    def add_first_log_to_logzio_shipper(self, file_parser: FileParser, logs_queue: LogsQueue) -> None:
+    def add_first_log_to_logzio_shipper(self, file_parser: FileParser,
+                                        consumer_producer_queues: ConsumerProducerQueues) -> None:
         for log in file_parser.parse_file():
-            logs_queue.put_log_into_queue(log)
+            consumer_producer_queues.put_log_into_queue(log)
             break
 
-        logs_queue.put_end_log_into_queue()
+        consumer_producer_queues.put_end_log_into_queue()
 
     def get_file_custom_fields_bytes(self, file_handler: FileHandler) -> int:
         custom_fields: dict = {}

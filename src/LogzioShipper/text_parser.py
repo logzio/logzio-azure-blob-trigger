@@ -14,10 +14,9 @@ logger.setLevel(logging.INFO)
 
 class TextParser(FileParser):
 
-    def __init__(self, file_stream: BytesIO, multiline_regex: Optional[str], datetime_finder: Optional[str] = None,
-                 datetime_format: Optional[str] = None) -> None:
+    def __init__(self, file_stream: BytesIO, multiline_regex: Optional[str] = None,
+                 datetime_finder: Optional[str] = None, datetime_format: Optional[str] = None) -> None:
         super().__init__(file_stream, datetime_finder, datetime_format)
-        self._json_path_parser = None
         self._multiline_regex = multiline_regex
 
     def parse_file(self) -> Generator[str, None, None]:

@@ -2,7 +2,6 @@ import logging
 import os
 import csv
 import zlib
-import threading
 import concurrent.futures
 
 from typing import Optional, Generator, List
@@ -12,7 +11,7 @@ from .file_parser import FileParser
 from .json_parser import JsonParser
 from .csv_parser import CsvParser
 from .text_parser import TextParser
-from .logs_queue import LogsQueue
+from .consumer_producer_queues import ConsumerProducerQueues
 from .logzio_shipper import LogzioShipper
 from .custom_field import CustomField
 
@@ -49,11 +48,13 @@ class FileHandler:
         self._file_stream = self._get_seekable_file_stream(file_stream)
         self._file_size = file_size
         self._datetime_format = self._get_datetime_format()
+        self._is_default_file_parser = False
+        self._file_format = os.environ[FileHandler.FORMAT_ENVIRON_NAME]
         self._file_parser = self._get_file_parser()
-        self._logs_queue = LogsQueue()
+        self._consumer_producer_queues = ConsumerProducerQueues()
         self._logzio_shipper = LogzioShipper(os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME],
                                              os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME],
-                                             self._logs_queue,
+                                             self._consumer_producer_queues,
                                              FileHandler.VERSION)
         self._custom_fields = [CustomField(field_key='file', field_value=self._file_name)]
 
@@ -66,6 +67,9 @@ class FileHandler:
     def get_custom_fields(self) -> Generator:
         for custom_field in self._custom_fields:
             yield custom_field
+
+    class DefaultParserError(Exception):
+        pass
 
     class FailedToSendLogsError(Exception):
         pass
@@ -159,28 +163,33 @@ class FileHandler:
         return datetime_format
 
     def _get_file_parser(self) -> FileParser:
-        file_format = os.environ[FileHandler.FORMAT_ENVIRON_NAME]
         datetime_finder = self._get_datetime_finder()
-        multiline_regex = self._get_multiline_regex()
 
         logs_sample = [self._file_stream.readline().decode("utf-8").rstrip(),
                        self._file_stream.readline().decode("utf-8").rstrip()]
 
         self._file_stream.seek(0)
 
-        if file_format == FileHandler.JSON_FORMAT_VALUE:
+        if self._file_format == FileHandler.JSON_FORMAT_VALUE:
             if logs_sample[0].startswith(FileHandler.JSON_CHAR):
                 return JsonParser(self._file_stream, datetime_finder, self._datetime_format)
 
-            return TextParser(self._file_stream, multiline_regex)
+            logger.error(
+                "Json file - {0} does not start with '{1}'. Using text format instead.".format(self._file_name,
+                                                                                               FileHandler.JSON_CHAR))
+            self._is_default_file_parser = True
+            return TextParser(self._file_stream)
 
-        if file_format == FileHandler.CSV_FORMAT_VALUE:
+        if self._file_format == FileHandler.CSV_FORMAT_VALUE:
             delimiter = self._get_csv_delimiter(logs_sample)
 
             if delimiter is not None:
                 return CsvParser(self._file_stream, delimiter, datetime_finder, self._datetime_format)
 
-            return TextParser(self._file_stream, multiline_regex)
+            self._is_default_file_parser = True
+            return TextParser(self._file_stream)
+
+        multiline_regex = self._get_multiline_regex()
 
         return TextParser(self._file_stream, multiline_regex, datetime_finder, self._datetime_format)
 
@@ -210,20 +219,28 @@ class FileHandler:
                 logger.info("Log was not sent to Logz.io because of datetime filter - {}".format(log))
                 continue
 
-            self._logs_queue.put_log_into_queue(log)
+            self._consumer_producer_queues.put_log_into_queue(log)
 
             if self._logzio_shipper.exception is not None:
                 executor.shutdown()
+                self._write_info_logs()
+                self._write_error_logs()
                 raise self.FailedToSendLogsError("Failed to send logs to Logz.io for {}".format(self._file_name))
 
-        self._logs_queue.put_end_log_into_queue()
+        self._consumer_producer_queues.put_end_log_into_queue()
         executor.shutdown()
+        self._write_info_logs()
+        self._write_error_logs()
 
         if self._logzio_shipper.exception is not None:
             raise self.FailedToSendLogsError("Failed to send logs to Logz.io for {}".format(self._file_name))
 
         if not self._file_parser.are_all_logs_parsed or self._logzio_shipper.is_any_log_invalid:
             raise self.FailedToSendLogsError("Some/All logs did not send to Logz.io in {}".format(self._file_name))
+
+        if self._is_default_file_parser:
+            raise self.DefaultParserError("The file {0} is not in {1} format. Used text format instead.".format(
+                self._file_name, self._file_format))
 
     def _is_log_datetime_greater_or_equal_datetime_filter(self, datetime_filter: str, log: str) -> bool:
         if datetime_filter is None or self._datetime_format is None:
@@ -245,3 +262,21 @@ class FileHandler:
             return False
 
         return True
+
+    def _write_info_logs(self) -> None:
+        while True:
+            info_message = self._consumer_producer_queues.get_info_from_queue()
+
+            if info_message is None:
+                return
+
+            logger.info(info_message)
+
+    def _write_error_logs(self) -> None:
+        while True:
+            error_message = self._consumer_producer_queues.get_error_from_queue()
+
+            if error_message is None:
+                return
+
+            logger.error(error_message)
