@@ -14,9 +14,10 @@ logger.setLevel(logging.INFO)
 
 class TextParser(FileParser):
 
-    def __init__(self, file_stream: BytesIO, multiline_regex: str, datetime_finder: Optional[str] = None,
+    def __init__(self, file_stream: BytesIO, multiline_regex: Optional[str], datetime_finder: Optional[str] = None,
                  datetime_format: Optional[str] = None) -> None:
         super().__init__(file_stream, datetime_finder, datetime_format)
+        self._json_path_parser = None
         self._multiline_regex = multiline_regex
 
     def parse_file(self) -> Generator[str, None, None]:
@@ -28,7 +29,7 @@ class TextParser(FileParser):
                     break
                 try:
                     multiline_log = self._get_multiline_log(log)
-                except Exception:
+                except re.error:
                     self._are_all_logs_parsed = False
                     break
 
@@ -48,26 +49,26 @@ class TextParser(FileParser):
                 yield self._get_json_log(log)
 
     def get_log_datetime(self, log: str) -> Optional[datetime]:
-        if self._datetime_finder is not None and self._datetime_format is not None:
-            try:
-                matches = re.findall(self._datetime_finder, log)
-            except re.error as e:
-                logger.error(
-                    "Something is wrong with the datetime finder regex {0} - {1}".format(repr(self._datetime_finder), e))
-                return None
+        if self._datetime_finder is None or self._datetime_format is None:
+            return None
 
-            if len(matches) == 0:
-                return None
+        try:
+            matches = re.findall(self._datetime_finder, log)
+        except re.error as e:
+            logger.error(
+                "Something is wrong with the datetime finder regex {0} - {1}".format(repr(self._datetime_finder), e))
+            return None
 
-            try:
-                log_datetime = datetime.strptime(matches[0], self._datetime_format)
-            except ValueError:
-                logger.error("datetime in log {0} does not match datetime format {1}".format(log, self._datetime_format))
-                return None
+        if not matches:
+            return None
 
-            return log_datetime
+        try:
+            log_datetime = datetime.strptime(matches[0], self._datetime_format)
+        except ValueError:
+            logger.error("datetime in log {0} does not match datetime format {1}".format(log, self._datetime_format))
+            return None
 
-        return None
+        return log_datetime
 
     def _get_multiline_log(self, multiline_log: str) -> Optional[str]:
         while True:

@@ -1,10 +1,11 @@
 import logging
 import requests
 import threading
+import concurrent.futures
 import gzip
 import json
 
-from typing import List
+from typing import List, Optional
 from requests.adapters import HTTPAdapter, RetryError
 from requests.sessions import InvalidSchema, Session
 from urllib3.util.retry import Retry
@@ -22,6 +23,7 @@ class LogzioShipper:
     MAX_BULK_SIZE_BYTES = MAX_BODY_SIZE_BYTES / 10      # 1 MB
     MAX_LOG_SIZE_BYTES = 500 * 1000                     # 500 KB
 
+    MAX_WORKERS = 5
     MAX_RETRIES = 3
     BACKOFF_FACTOR = 1
     STATUS_FORCELIST = [500, 502, 503, 504]
@@ -32,37 +34,38 @@ class LogzioShipper:
         self._logs_queue = logs_queue
         self._version = version
         self._session = self._get_request_retry_session()
-        self._threads: List[threading.Thread] = []
-        self._is_exception_occurred = False
-        self._was_any_log_invalid = False
+        self._lock = threading.Lock()
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=LogzioShipper.MAX_WORKERS)
+        self._exception: Optional[Exception] = None
+        self._is_any_log_invalid = False
         self._logs: List[str] = []
         self._bulk_size = 0
         self._custom_fields: List[CustomField] = []
 
     @property
-    def is_exception_occurred(self) -> bool:
-        return self._is_exception_occurred
+    def exception(self) -> Exception:
+        return self._exception
 
     @property
-    def was_any_log_invalid(self) -> bool:
-        return self._was_any_log_invalid
+    def is_any_log_invalid(self) -> bool:
+        return self._is_any_log_invalid
 
     def run_logzio_shipper(self) -> None:
         while True:
-            if self._is_exception_occurred:
+            if self._exception is not None:
                 break
 
             log = self._logs_queue.get_log_from_queue()
 
             if log is None:
-                self._create_send_to_logzio_thread()
+                self._executor.submit(self._send_to_logzio, self._logs, self._bulk_size)
                 break
 
             enriched_log = self._add_custom_fields_to_log(log)
             enriched_log_size = len(enriched_log)
 
             if not self._is_log_valid_to_be_sent(enriched_log, enriched_log_size):
-                self._was_any_log_invalid = True
+                self._is_any_log_invalid = True
                 continue
 
             if not self._bulk_size + enriched_log_size > LogzioShipper.MAX_BULK_SIZE_BYTES:
@@ -70,19 +73,21 @@ class LogzioShipper:
                 self._bulk_size += enriched_log_size
                 continue
 
-            self._create_send_to_logzio_thread()
+            self._executor.submit(self._send_to_logzio, self._logs, self._bulk_size)
             self._reset_logs()
             self._logs.append(enriched_log)
             self._bulk_size = enriched_log_size
 
-        for thread in self._threads:
-            thread.join()
+        self._executor.shutdown()
 
         self._reset_logs()
         self._session.close()
 
-    async def send_to_logzio(self, logs: List[str], bulk_size: int) -> None:
-        if len(logs) == 0:
+    def add_custom_field_to_list(self, custom_field: CustomField) -> None:
+        self._custom_fields.append(custom_field)
+
+    def _send_to_logzio(self, logs: List[str], bulk_size: int) -> None:
+        if not logs:
             return
 
         try:
@@ -97,54 +102,53 @@ class LogzioShipper:
             response.raise_for_status()
             logger.info("Successfully sent bulk of {} bytes to Logz.io.".format(bulk_size))
         except requests.ConnectionError as e:
-            logger.error(
-                "Can't establish connection to {0} url. Please make sure your url is a Logz.io valid url. Max retries of {1} has reached. response: {2}".format(
-                    self._logzio_url, LogzioShipper.MAX_RETRIES, e))
-            self._is_exception_occurred = True
+            message = "Can't establish connection to {0} url. Please make sure your url is a Logz.io valid url. Max retries of {1} has reached. response: {2}".format(
+                    self._logzio_url, LogzioShipper.MAX_RETRIES, e)
+            self._set_exception(message, e)
             return
         except RetryError as e:
-            logger.error(
-                "Something went wrong. Max retries of {0} has reached. response: {1}".format(LogzioShipper.MAX_RETRIES,
-                                                                                             e))
-            self._is_exception_occurred = True
+            message = "Something went wrong. Max retries of {0} has reached. response: {1}".format(
+                LogzioShipper.MAX_RETRIES, e)
+            self._set_exception(message, e)
             return
-        except requests.exceptions.InvalidURL:
-            logger.error("Invalid url. Make sure your url is a valid url.")
-            self._is_exception_occurred = True
+        except requests.exceptions.InvalidURL as e:
+            message = "Invalid url. Make sure your url is a valid url."
+            self._set_exception(message, e)
             return
-        except InvalidSchema:
-            logger.error(
-                "No connection adapters were found for {}. Make sure your url starts with http:// or https://".format(
-                    self._logzio_url))
-            self._is_exception_occurred = True
+        except InvalidSchema as e:
+            message = "No connection adapters were found for {}. Make sure your url starts with http:// or https://".format(
+                    self._logzio_url)
+            self._set_exception(message, e)
             return
         except requests.HTTPError as e:
             status_code = e.response.status_code
-            self._is_exception_occurred = True
 
             if status_code == 400:
-                logger.error("The logs are bad formatted. response: {}".format(e))
+                message = "The logs are bad formatted. response: {}".format(e)
+                self._set_exception(message, e)
                 return
 
             if status_code == 401:
-                logger.error("The token is missing or not valid. Make sure you’re using the right account token.")
+                message = "The token is missing or not valid. Make sure you’re using the right account token."
+                self._set_exception(message, e)
                 return
 
-            logger.error("Somthing went wrong. response: {}".format(e))
+            message = "Something went wrong. response: {}".format(e)
+            self._set_exception(message, e)
             return
         except Exception as e:
-            logger.error("Something went wrong. response: {}".format(e))
-            self._is_exception_occurred = True
+            message = "Something went wrong. response: {}".format(e)
+            self._set_exception(message, e)
             return
 
-    def add_custom_field_to_list(self, custom_field: CustomField) -> None:
-        self._custom_fields.append(custom_field)
+    def _set_exception(self, message: str, exception: Exception) -> None:
+        self._lock.acquire()
 
-    def _create_send_to_logzio_thread(self) -> None:
-        thread = threading.Thread(target=self.send_to_logzio, args=(self._logs, self._bulk_size,))
+        if self._exception is None:
+            logger.error(message)
+            self._exception = exception
 
-        self._threads.append(thread)
-        thread.start()
+        self._lock.release()
 
     def _is_log_valid_to_be_sent(self, log: str, log_size: int) -> bool:
         if log_size > LogzioShipper.MAX_LOG_SIZE_BYTES:

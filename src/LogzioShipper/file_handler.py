@@ -3,6 +3,7 @@ import os
 import csv
 import zlib
 import threading
+import concurrent.futures
 
 from typing import Optional, Generator, List
 from io import BytesIO, IOBase
@@ -200,36 +201,47 @@ class FileHandler:
 
     def _send_logs_to_logzio(self) -> None:
         datetime_filter = self._get_datetime_filter()
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
-        logzio_shipper_thread = threading.Thread(target=self._logzio_shipper.run_logzio_shipper)
-        logzio_shipper_thread.start()
+        executor.submit(self._logzio_shipper.run_logzio_shipper)
 
         for log in self._file_parser.parse_file():
             if not self._is_log_datetime_greater_or_equal_datetime_filter(datetime_filter, log):
-                logger.info("Log was not sent to Logz.io because of date filter - {}".format(log))
+                logger.info("Log was not sent to Logz.io because of datetime filter - {}".format(log))
                 continue
 
             self._logs_queue.put_log_into_queue(log)
 
-            if self._logzio_shipper.is_exception_occurred:
-                logzio_shipper_thread.join()
+            if self._logzio_shipper.exception is not None:
+                executor.shutdown()
                 raise self.FailedToSendLogsError("Failed to send logs to Logz.io for {}".format(self._file_name))
 
         self._logs_queue.put_end_log_into_queue()
-        logzio_shipper_thread.join()
+        executor.shutdown()
 
-        if self._logzio_shipper.is_exception_occurred:
+        if self._logzio_shipper.exception is not None:
             raise self.FailedToSendLogsError("Failed to send logs to Logz.io for {}".format(self._file_name))
 
-        if not self._file_parser.are_all_logs_parsed or self._logzio_shipper.was_any_log_invalid:
+        if not self._file_parser.are_all_logs_parsed or self._logzio_shipper.is_any_log_invalid:
             raise self.FailedToSendLogsError("Some/All logs did not send to Logz.io in {}".format(self._file_name))
 
     def _is_log_datetime_greater_or_equal_datetime_filter(self, datetime_filter: str, log: str) -> bool:
-        if datetime_filter is not None:
-            log_datetime = self._file_parser.get_log_datetime(log)
-            filter_datetime = datetime.strptime(datetime_filter, self._datetime_format)
+        if datetime_filter is None or self._datetime_format is None:
+            return True
 
-            if log_datetime < filter_datetime:
-                return False
+        log_datetime = self._file_parser.get_log_datetime(log)
+
+        if log_datetime is None:
+            return True
+
+        try:
+            filter_datetime = datetime.strptime(datetime_filter, self._datetime_format)
+        except ValueError:
+            logger.error(
+                "datetime filter {0} does not match datetime format {1}".format(datetime_filter, self._datetime_format))
+            return True
+
+        if log_datetime < filter_datetime:
+            return False
 
         return True
