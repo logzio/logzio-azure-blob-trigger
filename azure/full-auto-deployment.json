@@ -80,7 +80,7 @@
       "defaultValue": "",
       "type": "string",
       "metadata": {
-        "description": "If file is csv/json, write the path of the datetime field inside each log. CSV path will always be the name of the datetime field. Json path can be the name of the datetime field if it's in the root or a path contains fields separated by '.' (for example: metadata.datetime). If file is text, write a regex that will get the datetime from each log. If log has many occurrences of datetime, make sure the regex will give the right one (for example: '(?:.*?[0-9]){2}.*?([0-9])' will give the third digit). If this value cannot be found inside a log, the log will be shipped to Logz.io. Leave empty if you are not using DatetimeFilter."
+        "description": "If file is csv/json: write the json path of the datetime field inside each log. CSV json path will always be the name of the datetime field. Json json path can be the name of the datetime field if it's in the root or a path contains fields separated by '.' (for example: metadata.datetime, metadata[:1].datetime). If file is text: write a regex that will get the datetime from each log. If log has many occurrences of datetime, make sure the regex will give the right one (for example: '(?:.*?[0-9]){2}.*?([0-9])' will give the third digit). If this value cannot be found inside a log, the log will be shipped to Logz.io. Leave empty if you are not using DatetimeFilter."
       }
     },
     "DatetimeFormat": {
