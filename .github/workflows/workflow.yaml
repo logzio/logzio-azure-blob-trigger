@@ -19,6 +19,7 @@ jobs:
         run: |
           pip install pytest
           pip install httpretty
+          pip install requests-mock
           pip install requests
           pip install azure-functions
           pip install jsonpath-ng
