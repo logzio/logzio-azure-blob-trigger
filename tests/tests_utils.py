@@ -1,14 +1,15 @@
 import logging
+import requests_mock
 import gzip
 import os
 import json
 
-from typing import Tuple, List
+from typing import Tuple
 from logging.config import fileConfig
 from io import BytesIO
 from src.LogzioShipper.file_parser import FileParser
 from src.LogzioShipper.file_handler import FileHandler
-from src.LogzioShipper.logzio_shipper import LogzioShipper
+from src.LogzioShipper.logs_queue import LogsQueue
 
 
 fileConfig('tests/logging_config.ini', disable_existing_loggers=False)
@@ -25,8 +26,10 @@ class TestsUtils:
         os.environ[FileHandler.FORMAT_ENVIRON_NAME] = file_format
         os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME] = TestsUtils.LOGZIO_URL
         os.environ[FileHandler.LOGZIO_TOKEN_ENVIRON_NAME] = TestsUtils.LOGZIO_TOKEN
-        os.environ[FileHandler.FILTER_DATE_ENVIRON_NAME] = FileHandler.NO_FILTER_DATE_VALUE
-        os.environ[FileHandler.FILTER_DATE_JSON_PATH_ENVIRON_NAME] = FileHandler.NO_FILTER_DATE_JSON_PATH_VALUE
+        os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME] = FileHandler.NO_MULTILINE_REGEX_VALUE
+        os.environ[FileHandler.DATETIME_FILTER_ENVIRON_NAME] = FileHandler.NO_DATETIME_FILTER_VALUE
+        os.environ[FileHandler.DATETIME_FINDER_ENVIRON_NAME] = FileHandler.NO_DATETIME_FINDER_VALUE
+        os.environ[FileHandler.DATETIME_FORMAT_ENVIRON_NAME] = FileHandler.NO_DATETIME_FORMAT_VALUE
 
     @staticmethod
     def get_file_stream_and_size(file_path: str) -> Tuple[BytesIO, int]:
@@ -72,29 +75,34 @@ class TestsUtils:
 
         return logs_num
 
-    def get_sending_file_results(self, file_handler: FileHandler, latest_requests: list) -> Tuple[int, int, int]:
+    def get_sending_file_results(self, file_handler: FileHandler) -> Tuple[int, int, int]:
         requests_num = 0
         sent_logs_num = 0
         sent_bytes = 0
 
-        try:
-            file_handler.handle_file()
-        except file_handler.FailedToSendLogsError:
-            pass
+        with requests_mock.Mocker() as mocker:
+            mocker.register_uri(method='POST', url=os.environ[FileHandler.LOGZIO_URL_ENVIRON_NAME], status_code=200)
 
-        for request in latest_requests:
+            try:
+                file_handler.handle_file()
+            except file_handler.FailedToSendLogsError:
+                pass
+
+        for request in mocker.request_history:
             requests_num += 1
 
-            for log in gzip.decompress(request.parsed_body).splitlines():
+            for log in gzip.decompress(request.body).splitlines():
                 sent_logs_num += 1
                 sent_bytes += len(log)
 
-        return int(requests_num / 2), int(sent_logs_num / 2), int(sent_bytes / 2)
+        return requests_num, sent_logs_num, sent_bytes
 
-    def add_first_log_to_logzio_shipper(self, file_parser: FileParser, logzio_shipper: LogzioShipper) -> None:
+    def add_first_log_to_logzio_shipper(self, file_parser: FileParser, logs_queue: LogsQueue) -> None:
         for log in file_parser.parse_file():
-            logzio_shipper.add_log_to_send(log)
+            logs_queue.put_log_into_queue(log)
             break
+
+        logs_queue.put_end_log_into_queue()
 
     def get_file_custom_fields_bytes(self, file_handler: FileHandler) -> int:
         custom_fields: dict = {}
