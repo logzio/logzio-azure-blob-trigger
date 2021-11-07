@@ -35,7 +35,7 @@ class ConsumerProducerQueues:
         return info_message
 
     def put_info_into_queue(self, info_message: str) -> None:
-        self._errors_queue.put(info_message)
+        self._info_queue.put(info_message)
 
     def get_error_from_queue(self) -> Optional[str]:
         try:
