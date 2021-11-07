@@ -36,7 +36,7 @@
         "TEXT"
       ],
       "metadata": {
-        "description": "The format of the logs."
+        "description": "The format of the log files."
       }
     },
     "LogzioURL": {
@@ -73,14 +73,14 @@
       "defaultValue": "",
       "type": "string",
       "metadata": {
-        "description": "Every log with datetime greater or equal to this datetime will be shipped to Logz.io (for it to take effect DatetimeFinder must not be empty). Leave empty if you want all logs to be shipped to Logz.io."
+        "description": "Every log with datetime greater or equal to this datetime will be shipped to Logz.io (for it to take effect DatetimeFinder and DatetimeFormat must not be empty). Leave empty if you want all logs to be shipped to Logz.io."
       }
     },
     "DatetimeFinder": {
       "defaultValue": "",
       "type": "string",
       "metadata": {
-        "description": "If file is csv/json: write the json path of the datetime field inside each log. CSV json path will always be the name of the datetime field. Json json path can be the name of the datetime field if it's in the root or a path contains fields separated by '.' (for example: metadata.datetime, metadata[:1].datetime). If file is text: write a regex that will get the datetime from each log. If log has many occurrences of datetime, make sure the regex will give the right one (for example: '(?:.*?[0-9]){2}.*?([0-9])' will give the third digit). If this value cannot be found inside a log, the log will be shipped to Logz.io. Leave empty if you are not using DatetimeFilter."
+        "description": "If file is csv/json: write the json path of the datetime field inside each log. CSV json path will always be the name of the datetime field. Json json path can be the name of the datetime field if it's in the root, or a path contains fields separated by '.' (for example: metadata.datetime, metadata[:1].datetime). If file is text: write a regex that will get the datetime from each log. If log has many occurrences of datetime, make sure the regex will give the right one (for example: '(?:.*?[0-9]){2}.*?([0-9])' will give the third digit). If this value cannot be found inside a log, the log will be shipped to Logz.io. Leave empty if you are not using DatetimeFilter."
       }
     },
     "DatetimeFormat": {
