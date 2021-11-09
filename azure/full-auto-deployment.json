@@ -73,7 +73,7 @@
       "defaultValue": "",
       "type": "string",
       "metadata": {
-        "description": "Every log with datetime greater or equal to this datetime will be shipped to Logz.io (for it to take effect DatetimeFinder and DatetimeFormat must not be empty). Leave empty if you want all logs to be shipped to Logz.io."
+        "description": "Every log with datetime greater or equal to this datetime (for example: 2021-11-05T10:10:10) will be shipped to Logz.io (for it to take effect DatetimeFinder and DatetimeFormat must not be empty). Leave empty if you want all logs to be shipped to Logz.io."
       }
     },
     "DatetimeFinder": {
