@@ -36,7 +36,7 @@
         "TEXT"
       ],
       "metadata": {
-        "description": "The format of the logs."
+        "description": "The format of the log files."
       }
     },
     "LogzioURL": {
@@ -69,18 +69,25 @@
         "description": "The regex that matches the multiline logs in text blob files. Leave empty if you do not use multiline logs in your text blob files."
       }
     },
-    "FilterDate": {
+    "DatetimeFilter": {
       "defaultValue": "",
       "type": "string",
       "metadata": {
-        "description": "Every log with date greater or equals to this date will be shipped to Logz.io (for it to take effect FilterDateJson must not be empty). The date must be in the same format as date in the logs. Leave empty if you want all logs to be shipped to Logz.io."
+        "description": "Every log with datetime greater or equal to this datetime (for example: 2021-11-05T10:10:10) will be shipped to Logz.io (for it to take effect DatetimeFinder and DatetimeFormat must not be empty). Leave empty if you want all logs to be shipped to Logz.io."
       }
     },
-    "FilterDateJsonPath": {
+    "DatetimeFinder": {
       "defaultValue": "",
       "type": "string",
       "metadata": {
-        "description": "The json path of the date inside each log (for example: metadata.datetime). If this value cannot be found inside a log, the log will be shipped to Logz.io. Leave empty if you are not using FilterDate."
+        "description": "If file is csv/json: write the json path of the datetime field inside each log. CSV json path will always be the name of the datetime field. Json json path can be the name of the datetime field if it's in the root, or a path contains fields separated by '.' (for example: metadata.datetime, metadata[:1].datetime). If file is text: write a regex that will get the datetime from each log. If log has many occurrences of datetime, make sure the regex will give the right one (for example: '(?:.*?[0-9]){2}.*?([0-9])' will give the third digit). If this value cannot be found inside a log, the log will be shipped to Logz.io. Leave empty if you are not using DatetimeFilter."
+      }
+    },
+    "DatetimeFormat": {
+      "defaultValue": "",
+      "type": "string",
+      "metadata": {
+        "description": "The datetime format of DatetimeFilter and datetime field in each log (for example: %Y/%m/%dT%H:%M:%S%z is for 2021/11/01T10:10:10+0000 datetime). If the format is wrong, the log will be shipped to Logz.io. Leave empty if you are not using DatetimeFilter."
       }
     }
   },
@@ -234,12 +241,16 @@
               "value": "[if(equals(parameters('MultilineRegex'), ''), 'NO_REGEX', parameters('MultilineRegex'))]"
             },
             {
-              "name": "FilterDate",
-              "value": "[if(equals(parameters('FilterDate'), ''), 'NO_FILTER_DATE', parameters('FilterDate'))]"
+              "name": "DatetimeFilter",
+              "value": "[if(equals(parameters('DatetimeFilter'), ''), 'NO_DATETIME_FILTER', parameters('DatetimeFilter'))]"
             },
             {
-              "name": "FilterDateJsonPath",
-              "value": "[if(equals(parameters('FilterDateJsonPath'), ''), 'NO_FILTER_DATE_JSON_PATH', parameters('FilterDateJsonPath'))]"
+              "name": "DatetimeFinder",
+              "value": "[if(equals(parameters('DatetimeFinder'), ''), 'NO_DATETIME_FINDER', parameters('DatetimeFinder'))]"
+            },
+            {
+              "name": "DatetimeFormat",
+              "value": "[if(equals(parameters('DatetimeFormat'), ''), 'NO_DATETIME_FORMAT', parameters('DatetimeFormat'))]"
             },
             {
               "name": "StorageConnectionString",

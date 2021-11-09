@@ -19,11 +19,10 @@ jobs:
         run: |
           pip install pytest
           pip install httpretty
+          pip install requests-mock
           pip install requests
           pip install azure-functions
-          pip install pyyaml
           pip install jsonpath-ng
-          pip install python-dateutil
           pip install pytest-cov
           pytest --cov-report xml:code_coverage.xml --cov=src tests/*_tests.py
       - name: Code-coverage
