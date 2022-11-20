@@ -93,6 +93,9 @@ class FileHandler:
         seekable_file_stream = BytesIO()
 
         for line in file_stream:
+            if line.decode("utf-8").rstrip() == '':
+                continue
+
             seekable_file_stream.write(line)
 
         seekable_file_stream.seek(0)
