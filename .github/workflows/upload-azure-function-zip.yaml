@@ -11,6 +11,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Copy 'src' directory and rename it 'logzio_function'
+        run: |
+          cp -R src logzio_function
       - name: Azure Login
         uses: azure/login@v1
         with:
