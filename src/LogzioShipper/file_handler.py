@@ -93,17 +93,15 @@ class FileHandler:
         seekable_file_stream = BytesIO()
 
         for line in file_stream:
-            if line.decode("utf-8").rstrip() == '':
-                continue
-
             seekable_file_stream.write(line)
 
         seekable_file_stream.seek(0)
 
         if not self._is_gz_file(seekable_file_stream):
-            return seekable_file_stream
+            return self._get_seekable_stream_without_empty_lines(seekable_file_stream)
 
-        return self._get_seekable_decompressed_gz_file_stream(seekable_file_stream)
+        seekable_decompressed_gz_file_stream = self._get_seekable_decompressed_gz_file_stream(seekable_file_stream)
+        return self._get_seekable_stream_without_empty_lines(seekable_decompressed_gz_file_stream)
 
     def _is_gz_file(self, seekable_file_stream: BytesIO) -> bool:
         is_gz_file = False
@@ -133,6 +131,18 @@ class FileHandler:
         seekable_decompressed_gz_file_stream.seek(0)
 
         return seekable_decompressed_gz_file_stream
+
+    def _get_seekable_stream_without_empty_lines(self, seekable_file_stream: BytesIO) -> BytesIO:
+        seekable_file_stream_without_empty_lines = BytesIO()
+
+        for line in seekable_file_stream:
+            if line.decode("utf-8").rstrip() == '':
+                continue
+
+            seekable_file_stream_without_empty_lines.write(line)
+        
+        seekable_file_stream_without_empty_lines.seek(0)
+        return seekable_file_stream_without_empty_lines
 
     def _get_multiline_regex(self) -> Optional[str]:
         multiline_regex = os.environ[FileHandler.MULTILINE_REGEX_ENVIRON_NAME]
