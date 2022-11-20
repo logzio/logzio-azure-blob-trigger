@@ -1,0 +1,38 @@
+name: run unit tests with code-coverage
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - edited
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+
+jobs:
+  run_unit_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Copy 'src' directory and rename it 'logzio_function'
+        run: |
+          cp -R src logzio_function
+      - name: Run unit tests
+        run: |
+          pip install pytest
+          pip install httpretty
+          pip install requests-mock
+          pip install requests
+          pip install azure-functions
+          pip install jsonpath-ng
+          pip install pytest-cov
+          pytest --cov-report xml:code_coverage.xml --cov=src tests/*_tests.py
