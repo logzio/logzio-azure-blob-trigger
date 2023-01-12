@@ -40,7 +40,7 @@ class FileHandler:
     NO_DATETIME_FINDER_VALUE = 'NO_DATETIME_FINDER'
     NO_DATETIME_FORMAT_VALUE = 'NO_DATETIME_FORMAT'
 
-    VERSION = '1.0.5'
+    VERSION = '1.0.6'
 
     def __init__(self, file_name: str, file_stream: IOBase, file_size: int) -> None:
         self._file_name = file_name

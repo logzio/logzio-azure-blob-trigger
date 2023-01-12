@@ -20,16 +20,15 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       - uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: '16'
       - name: Create 'logzio_function' zip file that contains the function package
         run: |
-          npm i -g azure-functions-core-tools@3 --unsafe-perm true
+          npm i -g azure-functions-core-tools@4 --unsafe-perm true
           cd logzio_function
           func pack --build-native-deps --python
           cp logzio_function.zip ../
       - name: Upload 'logzio_function' zip file to Azure storage
         uses: azure/CLI@v1
         with:
-          azcliversion: 2.0.72
           inlineScript: |
-            az storage blob upload --account-name logzioazureblobtrigger --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} -f logzio_function.zip -c logzio -n logzio_function.zip
+            az storage blob upload --overwrite true --account-name logzioazureblobtrigger --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} -f logzio_function.zip -c logzio -n logzio_function.zip
