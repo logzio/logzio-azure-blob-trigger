@@ -14,7 +14,7 @@
     "ContainerName": {
       "defaultValue": "logs",
       "minLength": 3,
-      "maxLength": 24,
+      "maxLength": 63,
       "type": "string",
       "metadata": {
         "description": "The name of the blob container within the storage account. Must be between 3 and 63 characters in length and contains numbers, lower-case letters and dash (-) only. Every dash (-) character must be immediately preceded and followed by a letter or number."
