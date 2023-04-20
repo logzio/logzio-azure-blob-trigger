@@ -15,9 +15,9 @@ jobs:
         run: |
           cp -R src logzio_function
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/actions/login@v1
         with:
-          creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
