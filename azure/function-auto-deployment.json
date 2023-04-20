@@ -197,7 +197,7 @@
             },
             {
               "name": "WEBSITE_RUN_FROM_PACKAGE",
-              "value": "https://logzioazureblobtrigger.blob.core.windows.net/logzio/logzio_function.zip"
+              "value": "https://logzioblobtrigger.blob.core.windows.net/logzio/logzio_function.zip"
             },
             {
               "name": "ContainerLogsPath",
