@@ -94,3 +94,25 @@ The file name **does not** have to be with these extensions.
 ## Searching in Logz.io
 
 All logs that were sent from the function will be under the type `azure_blob_trigger` 
+
+
+## changelog
+
+- v1.0.7:
+  - Delete `git-secrets` workflow
+  - Update azure extension bundle `[2.*, 3.0.0)` -> `[4.0.0, 5.0.0)`
+  - Update Python version `3.8` -> `3.10`
+- v1.0.6:
+  - Function does not send logs and throws exception. Update upload workflow node version to 16 and azure-functions-core-tools to 4 (handles functions with runtime version 4).
+- v1.0.5:
+  - Support of sending logs of log files with empty lines.
+- v1.0.4:
+  - Upgrade runtime version from ~3 to ~4
+- v1.0.3: 
+  - Add datetime filter to text format
+- v1.0.2:
+  - Format parameter tells in which format the logs are. Available formats: JSON, CSV, TEXT
+- v1.0.1:
+  - filter files logs by date.
+- v1.0.0:
+  - Initial release
