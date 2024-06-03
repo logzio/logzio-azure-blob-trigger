@@ -30,6 +30,6 @@ jobs:
           pip install requests-mock
           pip install requests
           pip install azure-functions
-          pip install jsonpath-ng
+          pip install jsonpath-ng==1.5.3
           pip install pytest-cov
           pytest --cov-report xml:code_coverage.xml --cov=src tests/*_tests.py
