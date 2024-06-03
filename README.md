@@ -94,3 +94,11 @@ The file name **does not** have to be with these extensions.
 ## Searching in Logz.io
 
 All logs that were sent from the function will be under the type `azure_blob_trigger` 
+
+
+## changelog
+
+- v1.0.7:
+  - Delete `git-secrets` workflow
+  - Update azure extension bundle `[2.*, 3.0.0)` -> `[4.0.0, 5.0.0)`
+  - Update Python version `3.8` -> `3.10` 
