@@ -197,8 +197,8 @@
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('AppServicePlanName'))]",
         "reserved": true,
         "siteConfig": {
-          "pythonVersion": "3.8",
-          "linuxFxVersion": "PYTHON|3.8",
+          "pythonVersion": "3.10",
+          "linuxFxVersion": "PYTHON|3.10",
           "appSettings": [
             {
               "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
@@ -214,7 +214,7 @@
             },
             {
               "name": "FUNCTIONS_WORKER_PROCESS_COUNT",
-              "value": "7"
+              "value": "1"
             },
             {
               "name": "FUNCTIONS_WORKER_RUNTIME",
