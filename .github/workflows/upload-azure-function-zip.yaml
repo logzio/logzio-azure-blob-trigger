@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Copy 'src' directory and rename it 'logzio_function'
         run: |
           cp -R src logzio_function
@@ -18,7 +18,7 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
           node-version: '16'
       - name: Create 'logzio_function' zip file that contains the function package
@@ -28,7 +28,7 @@ jobs:
           func pack --build-native-deps --python
           cp logzio_function.zip ../
       - name: Upload 'logzio_function' zip file to Azure storage
-        uses: azure/CLI@v1
+        uses: azure/CLI@v2
         with:
           inlineScript: |
             az storage blob upload --overwrite true --account-name logzioblobtrigger --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} -f logzio_function.zip -c logzio -n logzio_function.zip
