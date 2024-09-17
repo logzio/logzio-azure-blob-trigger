@@ -4,4 +4,4 @@
 
 azure-functions
 requests
-jsonpath-ng==1.5.3
+jsonpath-ng==1.6.1
