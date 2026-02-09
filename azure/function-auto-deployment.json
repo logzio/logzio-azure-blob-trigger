@@ -96,6 +96,18 @@
       "metadata": {
         "description": "The datetime format of DatetimeFilter and datetime field in each log (for example: %Y/%m/%dT%H:%M:%S%z is for 2021/11/01T10:10:10+0000 datetime). If the format is wrong, the log will be shipped to Logz.io. Leave empty if you are not using DatetimeFilter."
       }
+    },
+    "AppServicePlanSku": {
+      "type": "string",
+      "defaultValue": "Y1",
+      "allowedValues": [
+        "Y1",
+        "B1",
+        "EP1"
+      ],
+      "metadata": {
+        "description": "The App Service Plan pricing tier. Select 'Y1' for Consumption plan (dynamic IPs, lowest cost). Select 'B1' for Basic plan (static outbound IPs, recommended for IP whitelisting). Select 'EP1' for Premium plan (static IPs with VNet integration support)."
+      }
     }
   },
   "variables": {
@@ -127,7 +139,9 @@
           },
           "keySource": "Microsoft.Storage"
         },
-        "accessTier": "Hot"
+        "accessTier": "Hot",
+        "publicNetworkAccess": "Enabled",
+        "allowBlobPublicAccess": false
       }
     },
     {
@@ -136,11 +150,11 @@
       "name": "[variables('AppServicePlanName')]",
       "location": "[resourceGroup().location]",
       "sku": {
-        "name": "Y1",
-        "tier": "Dynamic",
-        "size": "Y1",
-        "family": "Y",
-        "capacity": 0
+        "name": "[parameters('AppServicePlanSku')]",
+        "tier": "[if(equals(parameters('AppServicePlanSku'), 'Y1'), 'Dynamic', if(equals(parameters('AppServicePlanSku'), 'B1'), 'Basic', 'ElasticPremium'))]",
+        "size": "[parameters('AppServicePlanSku')]",
+        "family": "[if(equals(parameters('AppServicePlanSku'), 'Y1'), 'Y', if(equals(parameters('AppServicePlanSku'), 'B1'), 'B', 'EP'))]",
+        "capacity": "[if(equals(parameters('AppServicePlanSku'), 'Y1'), 0, 1)]"
       },
       "kind": "linux",
       "properties": {

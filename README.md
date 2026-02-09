@@ -51,6 +51,7 @@ You'll be taken to Azure Custom deployment page. Fill in all the parameters and 
 | Format | The format of the log files. | Required | - |
 | Logzio URL | The Logz.io listener URL fot your region. (For more details, see the regions page: https://docs.logz.io/user-guide/accounts/account-region.html) | Required | - |
 | Logzio Token | Your Logz.io logs token. (Can be retrieved from the Manage Token page.) | Required | - |
+| App Service Plan Sku | The pricing tier for the function. Y1=Consumption (dynamic IPs), B1=Basic, EP1=Premium. | Not Required | Y1 |
 | Logs Path | The path from where blob files will trigger the Logz.io function (including subdirectories in that path). Leave empty if you want that every blob file in the container will trigger the Logz.io function. | Not Required | \<\<ContainerLogsPath\>\>/{name} |
 | Multiline Regex | The regex that matches the multiline logs in text blob files. Leave empty if you do not use multiline logs in your text blob files. | Not Required | NO_REGEX |
 | Datetime Filter | Every log with datetime greater or equal to this datetime (for example: 2021-11-05T10:10:10) will be shipped to Logz.io (for it to take effect DatetimeFinder and DatetimeFormat must not be empty). Leave empty if you want all logs to be shipped to Logz.io. | Not Required | NO_DATETIME_FILTER |
@@ -68,6 +69,14 @@ If everything went well, you should see the following screen. Press **Go to reso
 ## Resources
 
 ![Resources](img/Resources.png)
+
+## Network Security & IP Whitelisting
+
+If your Azure Storage Account has network restrictions and requires IP whitelisting:
+1. Deploy with **App Service Plan Sku = B1** (or EP1) for static outbound IPs
+2. After deployment, get the static IPs: Function App → Settings → Networking → Outbound addresses
+3. Whitelist those IPs in your Storage Account → Networking → Firewall
+
 
 ## Supported Data Types
 
@@ -98,6 +107,9 @@ All logs that were sent from the function will be under the type `azure_blob_tri
 
 ## changelog
 
+- v1.0.8:
+  - Add support for Basic (B1) and Premium (EP1) App Service Plans for static outbound IP addresses
+  - Enable IP whitelisting capability for Storage Accounts with network restrictions
 - v1.0.7:
   - Delete `git-secrets` workflow
   - Update azure extension bundle `[2.*, 3.0.0)` -> `[4.0.0, 5.0.0)`
